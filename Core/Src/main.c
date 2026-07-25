@@ -29,6 +29,7 @@ char msg[64];
 
 /* 模式: 0=速度环, 1=角度转弯, 2=巡线 */
 uint8_t   g_op_mode = 0;
+uint8_t   g_turning = 0;   /* 巡线中正在转弯标志 */
 SpeedCtrl g_spd;
 AngleTurn g_ang;
 LineTrack g_trk;
@@ -69,8 +70,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             if (g_ang.state == ANGLE_RUNNING)
             {
                 AngleTurn_Update(&g_ang);
-                SpeedCtrl_SetTargets(&g_spd, (int16_t)-g_ang.correction,
-                                     (int16_t)g_ang.correction);
+                SpeedCtrl_SetTargets(&g_spd, (int16_t)g_ang.correction,
+                                     (int16_t)-g_ang.correction);
                 SpeedCtrl_Update(&g_spd);
             }
             else if (g_ang.state == ANGLE_DONE)
@@ -81,6 +82,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             break;
 
         case 2: /* 巡线 */
+            if (g_turning)
+            {
+                /* 转弯中 */
+                AngleTurn_Update(&g_ang);
+                if (g_ang.state == ANGLE_RUNNING)
+                {
+                    SpeedCtrl_SetTargets(&g_spd, (int16_t)g_ang.correction,
+                                         (int16_t)-g_ang.correction);
+                    SpeedCtrl_Update(&g_spd);
+                }
+                else if (g_ang.state == ANGLE_DONE)
+                {
+                    SpeedCtrl_SetTargets(&g_spd, 0, 0);
+                    SpeedCtrl_Update(&g_spd);
+                    g_turning = 0;
+                    LineTrack_Init(&g_trk);
+                }
+            }
+            else
             {
                 TrackEvent ev = LineTrack_Update(&g_trk);
                 if (ev == TRACK_OK)
@@ -95,6 +115,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
                     AngleTurn_Start(&g_ang, (ev == TRACK_LEFT) ? 90.0f : -90.0f);
+                    g_turning = 1;
                 }
             }
             break;
@@ -108,6 +129,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         g_op_mode = (g_op_mode + 1) % 3;
         g_debug_run = 0;
+        g_turning = 0;
         SpeedCtrl_SetTargets(&g_spd, 0, 0);
         SpeedCtrl_Update(&g_spd);
         TB6612_Brake();
@@ -134,6 +156,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             }
             break;
         case 2: /* 巡线: 启动 */
+            g_turning = 0;
             LineTrack_Init(&g_trk);
             break;
         }
