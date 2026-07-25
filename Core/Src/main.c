@@ -41,6 +41,8 @@ int16_t  g_angle_base  = 10;
 int32_t  g_dist_target = 500;
 int32_t  g_dist_accum  = 0;
 uint8_t  g_dist_run    = 0;
+int32_t  g_dist_prev_l = 0;   /* 上帧左编码值 */
+int32_t  g_dist_prev_r = 0;   /* 上帧右编码值 */
 
 uint8_t  g_track_run   = 0;    /* 巡线启/停 */
 /* USER CODE END PV */
@@ -114,11 +116,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         case 3: /* 直行测距 */
             if (g_dist_run)
             {
-                int32_t al_raw = TB6612_GetLeftSpeed();
-                int32_t ar_raw = TB6612_GetRightSpeed();
-                int32_t al = (al_raw < 0) ? -al_raw : al_raw;
-                int32_t ar = (ar_raw < 0) ? -ar_raw : ar_raw;
-                g_dist_accum += (al + ar) / 2;
+                int32_t el, er;
+                TB6612_GetEncoder(&el, &er);
+                int32_t dl = (el > g_dist_prev_l) ? (el - g_dist_prev_l) : (g_dist_prev_l - el);
+                int32_t dr = (er > g_dist_prev_r) ? (er - g_dist_prev_r) : (g_dist_prev_r - er);
+                g_dist_accum += (dl + dr) / 2;
+                g_dist_prev_l = el; g_dist_prev_r = er;
                 if (g_dist_accum >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
@@ -185,7 +188,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             g_dist_run = !g_dist_run;
             if (g_dist_run) {
                 g_dist_accum = 0;
-                TB6612_ResetEncoder();
+                TB6612_GetEncoder(&g_dist_prev_l, &g_dist_prev_r);
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 printf("[DIST] Start, target=%d\r\n", (int)g_dist_target);
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
