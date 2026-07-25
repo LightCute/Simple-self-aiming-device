@@ -158,9 +158,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case 0: /* 待机: 圈数-1 */
             if (g_lap_target > 1) g_lap_target--; else g_lap_target = 5;
             break;
-        case 4: /* 速度环: 降速50 */
-            if (g_debug_speed > 50) {
-                g_debug_speed -= 50;
+        case 4: /* 速度环: 降速5 */
+            if (g_debug_speed > -900) {
+                g_debug_speed -= 5;
                 if (g_debug_run) { g_base_speed = g_debug_speed;
                                    g_target_left = g_target_right = g_debug_speed; }
             }
@@ -180,9 +180,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case 0: /* 待机: 圈数+1 */
             if (g_lap_target < 5) g_lap_target++; else g_lap_target = 1;
             break;
-        case 4: /* 速度环: 升速50 */
+        case 4: /* 速度环: 升速5 */
             if (g_debug_speed < 900) {
-                g_debug_speed += 50;
+                g_debug_speed += 5;
                 if (g_debug_run) { g_base_speed = g_debug_speed;
                                    g_target_left = g_target_right = g_debug_speed; }
             }
@@ -361,15 +361,17 @@ int main(void)
     case 4:
       OLED_PrintASCIIString(50, 14, g_debug_run ? "RUN" : "STOP",
                             &afont12x6, OLED_COLOR_NORMAL);
-      sprintf(msg, "Spd:%d K1- K2+", g_debug_speed);
+      sprintf(msg, "Spd:%d K1-5 K2+5", g_debug_speed);
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
-      sprintf(msg, "TL:%d AL:%d", g_target_left,  g_actual_left);
+      sprintf(msg, "TL:%d AL:%d", g_target_left, g_actual_left);
       OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TR:%d AR:%d", g_target_right, g_actual_right);
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "PWM L:%d R:%d", g_pwm_left, g_pwm_right);
       OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-      // printf("%d,%d,%d,%d,%d,%d\r\n", ...); /* 暂时关闭 */
+      printf("Spd:%d TL:%d AL:%d TR:%d AR:%d PWM:%d,%d\r\n",
+             g_debug_speed, g_target_left, g_actual_left,
+             g_target_right, g_actual_right, g_pwm_left, g_pwm_right);
       break;
 
     /* ============ 模式5: 角度环调试 ============ */
