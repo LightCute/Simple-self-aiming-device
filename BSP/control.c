@@ -145,9 +145,9 @@ static float Outer_Angle(void)
     g_pid_angle.Kd = g_angle_Kd;
 
     if (abs_err > 15.0f)
-        g_pid_angle.output_max = 700.0f;
+        g_pid_angle.output_max = 500.0f;
     else
-        g_pid_angle.output_max = 350.0f;
+        g_pid_angle.output_max = 250.0f;
 
     float correction = PID_Calc(&g_pid_angle, angle_err);
 
