@@ -51,8 +51,8 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 static const char *mode_name(uint8_t m)
 {
-    static const char *names[] = {"SPEED","ANGLE","TRACK","DIST"};
-    return (m < 4) ? names[m] : "????";
+    static const char *names[] = {"SPEED","ANGLE","TRACK","DIST","ENCODER"};
+    return (m < 5) ? names[m] : "????";
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -134,6 +134,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             }
             break;
 
+        case 4: /* 编码器监视: 仅读取, 不驱动 */
+            break;
+
             default:
             break;
         }
@@ -144,7 +147,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == KEY3_Pin)
     {
-        g_op_mode = (g_op_mode + 1) % 4;
+        g_op_mode = (g_op_mode + 1) % 5;
         g_debug_run = 0;
         g_track_run = 0;
         g_dist_run  = 0;
@@ -186,6 +189,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 printf("[DIST] Start, target=%d\r\n", (int)g_dist_target);
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
+            break;
+        case 4: /* 编码器: 清零 */
+            TB6612_ResetEncoder();
             break;
         }
     }
@@ -305,6 +311,22 @@ int main(void)
       printf("[DIST] acc=%d/%d spdL=%d spdR=%d\r\n",
              (int)g_dist_accum, (int)g_dist_target,
              g_spd.actual_l, g_spd.actual_r);
+      break;
+
+    case 4:
+      {
+        int32_t el, er;
+        TB6612_GetEncoder(&el, &er);
+        OLED_PrintASCIIString(0, 14, "ENCODER RAW", &afont12x6, OLED_COLOR_NORMAL);
+        sprintf(msg, "L:%d", (int)el);
+        OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
+        sprintf(msg, "R:%d", (int)er);
+        OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
+        sprintf(msg, "spdL:%d spdR:%d", g_spd.actual_l, g_spd.actual_r);
+        OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
+        printf("Enc L:%d R:%d spdL:%d spdR:%d\r\n",
+               (int)el, (int)er, g_spd.actual_l, g_spd.actual_r);
+      }
       break;
     }
 
