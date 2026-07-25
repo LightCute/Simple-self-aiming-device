@@ -318,7 +318,8 @@ int main(void)
 
         printf("Raw=0x%02X Off=%d L=%d R=%d Z=%.1f",
                raw, (int)g_tracking_offset, left_cnt, right_cnt, mpu6050.KalmanAngleZ);
-        if (sharp != 0) printf("  **TURN=%d**", sharp);
+        if (sharp == 2)      printf("  **RIGHT**");
+        else if (sharp == 1) printf("  **LEFT**");
         printf("\r\n");
       }
       break;

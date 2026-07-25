@@ -68,26 +68,27 @@ uint8_t Tracking_GetRaw(void)
 }
 
 /*
- * 直角弯检测: 半边全黑半边全白
- * 返回: 0=无直角弯, 1=左直角弯(左边4路黑), 2=右直角弯(右边4路黑)
+ * 直角弯检测: 边缘判定法
+ * 右弯(顺时针): 6,7,8全黑 AND 1必白
+ * 左弯(逆时针): 1,2,3全黑 AND 8必白
+ * 返回: 0=无, 1=左直角弯, 2=右直角弯
  */
 uint8_t Tracking_IsSharpTurn(void)
 {
-    uint8_t raw = Tracking_GetRaw();
-    uint8_t left4  = raw & 0x0F;
-    uint8_t right4 = raw & 0xF0;
-
+    uint8_t raw  = Tracking_GetRaw();
     uint8_t result = 0;
-    if (left4 == 0x0F && right4 == 0x00)
-        result = 1;
-    else if (right4 == 0xF0 && left4 == 0x00)
+
+    /* 右弯: bit7,6,5=111 (8,7,6全黑) AND bit0=0 (1白) */
+    if ((raw & 0xE0) == 0xE0 && (raw & 0x01) == 0x00)
         result = 2;
 
+    /* 左弯: bit2,1,0=111 (3,2,1全黑) AND bit7=0 (8白) */
+    else if ((raw & 0x07) == 0x07 && (raw & 0x80) == 0x00)
+        result = 1;
+
     if (result != 0)
-    {
-        printf("[DETECT] TURN! Raw=0x%02X L4=0x%02X R4=0x%02X -> %d\r\n",
-               raw, left4, right4, result);
-    }
+        printf("[DETECT] Raw=0x%02X -> %s\r\n",
+               raw, (result == 2) ? "RIGHT" : "LEFT");
 
     return result;
 }
