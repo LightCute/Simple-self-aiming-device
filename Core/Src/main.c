@@ -37,6 +37,7 @@ LineTrack g_trk;
 int16_t  g_debug_speed = 20;
 float    g_debug_angle = 90.0f;
 uint8_t  g_debug_run   = 0;
+int16_t  g_angle_base  = 0;    /* 角度转弯基速, 0=原地转, >0=弧线转 */
 /* USER CODE END PV */
 
 void SystemClock_Config(void);
@@ -70,8 +71,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             if (g_ang.state == ANGLE_RUNNING)
             {
                 AngleTurn_Update(&g_ang);
-                SpeedCtrl_SetTargets(&g_spd, (int16_t)g_ang.correction,
-                                     (int16_t)-g_ang.correction);
+                SpeedCtrl_SetTargets(&g_spd,
+                    (int16_t)(g_angle_base - g_ang.correction),
+                    (int16_t)(g_angle_base + g_ang.correction));
                 SpeedCtrl_Update(&g_spd);
             }
             else if (g_ang.state == ANGLE_DONE)
@@ -238,7 +240,7 @@ int main(void)
       break;
 
     case 1:
-      sprintf(msg, "Set:%.0f K1-15 K2+15", g_debug_angle);
+      sprintf(msg, "Set:%.0f Base:%d", g_debug_angle, (int)g_angle_base);
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "AngleZ:%.1f", mpu6050.KalmanAngleZ);
       OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);

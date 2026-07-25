@@ -30,9 +30,9 @@ static float PID_Calc(PID_t *pid, float error)
 
 void AngleTurn_Init(AngleTurn *a)
 {
-    a->pid.Kp = 1.0f; a->pid.Ki = 0.05f; a->pid.Kd = 5.0f;
+    a->pid.Kp = 0.01f; a->pid.Ki = 0.0001f; a->pid.Kd = 0.01f;
     a->pid.integral = 0; a->pid.prev_error = 0;
-    a->pid.integral_max = 200; a->pid.output_max = 500;
+    a->pid.integral_max = 200; a->pid.output_max = 300;
     a->correction = 0.0f;
     a->state = ANGLE_IDLE;
 }
@@ -57,8 +57,8 @@ AngleState AngleTurn_Update(AngleTurn *a)
     float abs_err   = (angle_err > 0) ? angle_err : -angle_err;
 
     a->pid.Kp = 1.0f; a->pid.Ki = 0.05f; a->pid.Kd = 5.0f;
-    if (abs_err > 15.0f) a->pid.output_max = 500;
-    else                  a->pid.output_max = 250;
+    if (abs_err > 15.0f) a->pid.output_max = 300;
+    else                  a->pid.output_max = 150;
 
     a->correction = PID_Calc(&a->pid, angle_err);
 
