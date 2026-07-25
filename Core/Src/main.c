@@ -153,7 +153,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         g_dist_run  = 0;
         SpeedCtrl_SetTargets(&g_spd, 0, 0);
         SpeedCtrl_Update(&g_spd);
-        TB6612_Brake();
+        TB6612_Stop();
         TB6612_ResetEncoder();
     }
     else if (GPIO_Pin == KEY4_Pin)
