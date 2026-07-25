@@ -119,12 +119,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 int32_t al = (al_raw < 0) ? -al_raw : al_raw;
                 int32_t ar = (ar_raw < 0) ? -ar_raw : ar_raw;
                 g_dist_accum += (al + ar) / 2;
-                static uint8_t dist_log = 0;
-                if (++dist_log >= 5) { dist_log = 0;
-                    printf("[DIST] acc=%d/%d al=%d(%d) ar=%d(%d)\r\n",
-                           (int)g_dist_accum, (int)g_dist_target,
-                           al, al_raw, ar, ar_raw);
-                }
                 if (g_dist_accum >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
@@ -308,6 +302,9 @@ int main(void)
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TR:%d AR:%d", g_spd.target_r, g_spd.actual_r);
       OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
+      printf("[DIST] acc=%d/%d spdL=%d spdR=%d\r\n",
+             (int)g_dist_accum, (int)g_dist_target,
+             g_spd.actual_l, g_spd.actual_r);
       break;
     }
 
