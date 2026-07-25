@@ -38,9 +38,11 @@ float    g_debug_angle = 90.0f;
 uint8_t  g_debug_run   = 0;
 int16_t  g_angle_base  = 10;
 
-int32_t  g_dist_target = 500;   /* 目标编码器脉冲数 */
+int32_t  g_dist_target = 500;
 int32_t  g_dist_accum  = 0;
-uint8_t  g_dist_done   = 0;
+uint8_t  g_dist_run    = 0;
+
+uint8_t  g_track_run   = 0;    /* 巡线启/停 */
 /* USER CODE END PV */
 
 void SystemClock_Config(void);
@@ -89,6 +91,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             break;
 
         case 2: /* 巡线 */
+            if (g_track_run)
             {
                 TrackEvent ev = LineTrack_Update(&g_trk);
                 if (ev == TRACK_OK)
@@ -103,11 +106,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
                     g_ang.beep_cnt = 10;
-                    g_op_mode = 0;
+                    g_track_run = 0;
                 }
             }
+            break;
+
         case 3: /* 直行测距 */
-            if (!g_dist_done)
+            if (g_dist_run)
             {
                 int32_t el, er;
                 TB6612_GetEncoder(&el, &er);
@@ -116,7 +121,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
-                    g_dist_done = 1;
+                    g_dist_run = 0;
                     g_ang.beep_cnt = 10;
                 }
                 else
@@ -139,7 +144,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     {
         g_op_mode = (g_op_mode + 1) % 4;
         g_debug_run = 0;
-        g_dist_done = 0;
+        g_track_run = 0;
+        g_dist_run  = 0;
         SpeedCtrl_SetTargets(&g_spd, 0, 0);
         SpeedCtrl_Update(&g_spd);
         TB6612_Brake();
@@ -165,14 +171,18 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 dir = -dir;
             }
             break;
-        case 2: /* 巡线: 启动 */
-            LineTrack_Init(&g_trk);
+        case 2: /* 巡线: 启/停 */
+            g_track_run = !g_track_run;
+            if (g_track_run) LineTrack_Init(&g_trk);
+            else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
-        case 3: /* 直行测距: 启动 */
-            g_dist_done = 0;
-            g_dist_accum = 0;
-            TB6612_ResetEncoder();
-            SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+        case 3: /* 直行测距: 启/停 */
+            g_dist_run = !g_dist_run;
+            if (g_dist_run) {
+                g_dist_accum = 0;
+                TB6612_ResetEncoder();
+                SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+            } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
         }
     }
@@ -268,6 +278,7 @@ int main(void)
       break;
 
     case 2:
+      OLED_PrintASCIIString(40, 14, g_track_run ? "RUN" : "STOP", &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TRACK B:%d", g_trk.base_speed);
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TL:%d AL:%d", g_spd.target_l, g_spd.actual_l);
@@ -283,7 +294,7 @@ int main(void)
       break;
 
     case 3:
-      OLED_PrintASCIIString(40, 14, g_dist_done ? "DONE" : "RUN", &afont12x6, OLED_COLOR_NORMAL);
+      OLED_PrintASCIIString(40, 14, g_dist_run ? "RUN" : "STOP", &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "Tgt:%d K1-100 K2+100", (int)g_dist_target);
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "Acc:%d", (int)g_dist_accum);
