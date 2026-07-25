@@ -92,9 +92,7 @@ uint8_t Tracking_IsSharpTurn(void)
     else if ((raw & 0xE0) == 0xE0 && (raw & 0x01) == 0x00)
         result = 1;
 
-    if (result != 0)
-        printf("[DETECT] Raw=0x%02X -> %s\r\n",
-               raw, (result == 2) ? "RIGHT" : "LEFT");
+    /* printf("[DETECT] ...");  -- 关闭 */
 
     return result;
 }

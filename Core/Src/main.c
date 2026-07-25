@@ -266,9 +266,7 @@ int main(void)
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "PWM L:%d R:%d", g_spd.pwm_l, g_spd.pwm_r);
       OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-      printf("Spd:%d TL:%d AL:%d TR:%d AR:%d PWM:%d,%d\r\n",
-             g_debug_speed, g_spd.target_l, g_spd.actual_l,
-             g_spd.target_r, g_spd.actual_r, g_spd.pwm_l, g_spd.pwm_r);
+      /* printf("Spd:%d TL:%d AL:%d TR:%d AR:%d PWM:%d,%d\r\n", ...); */
       break;
 
     case 1:
@@ -294,10 +292,7 @@ int main(void)
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "Corr:%.0f", g_trk.correction);
       OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-      printf("B:%d Corr:%.0f TL:%d AL:%d TR:%d AR:%d Raw:0x%02X\r\n",
-             g_trk.base_speed, g_trk.correction,
-             g_spd.target_l, g_spd.actual_l, g_spd.target_r, g_spd.actual_r,
-             Tracking_GetRaw());
+      /* printf("B:%d Corr:%.0f ...", ...); */
       break;
 
     case 3:

@@ -36,12 +36,10 @@ TrackEvent LineTrack_Update(LineTrack *t)
     uint8_t sharp = Tracking_IsSharpTurn();
     if (sharp == 1)
     {
-        printf("[TRACK] Left corner detected, Off=%d\r\n", (int)g_tracking_offset);
         return TRACK_LEFT;
     }
     if (sharp == 2)
     {
-        printf("[TRACK] Right corner detected, Off=%d\r\n", (int)g_tracking_offset);
         return TRACK_RIGHT;
     }
     return TRACK_OK;
