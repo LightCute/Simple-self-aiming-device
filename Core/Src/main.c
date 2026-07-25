@@ -27,7 +27,7 @@
 MPU6050_t mpu6050;
 char msg[64];
 
-/* 模式: 0=速度环, 1=角度转弯, 2=巡线 */
+/* 模式: 0=速度环, 1=角度转弯, 2=巡线, 3=直行测距 */
 uint8_t   g_op_mode = 0;
 SpeedCtrl g_spd;
 AngleTurn g_ang;
@@ -36,7 +36,11 @@ LineTrack g_trk;
 int16_t  g_debug_speed = 20;
 float    g_debug_angle = 90.0f;
 uint8_t  g_debug_run   = 0;
-int16_t  g_angle_base  = 10;    /* 角度转弯基速, 0=原地转, >0=弧线转 */
+int16_t  g_angle_base  = 10;
+
+int32_t  g_dist_target = 500;   /* 目标编码器脉冲数 */
+int32_t  g_dist_accum  = 0;
+uint8_t  g_dist_done   = 0;
 /* USER CODE END PV */
 
 void SystemClock_Config(void);
@@ -45,8 +49,8 @@ static void MPU_Config(void);
 /* USER CODE BEGIN 0 */
 static const char *mode_name(uint8_t m)
 {
-    static const char *names[] = {"SPEED","ANGLE","TRACK"};
-    return (m < 3) ? names[m] : "????";
+    static const char *names[] = {"SPEED","ANGLE","TRACK","DIST"};
+    return (m < 4) ? names[m] : "????";
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -99,8 +103,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
                     g_ang.beep_cnt = 10;
+                    g_op_mode = 0;
                 }
             }
+        case 3: /* 直行测距 */
+            if (!g_dist_done)
+            {
+                int32_t el, er;
+                TB6612_GetEncoder(&el, &er);
+                g_dist_accum = (el + er) / 2;
+                if (g_dist_accum >= g_dist_target)
+                {
+                    SpeedCtrl_SetTargets(&g_spd, 0, 0);
+                    SpeedCtrl_Update(&g_spd);
+                    g_dist_done = 1;
+                    g_ang.beep_cnt = 10;
+                }
+                else
+                {
+                    SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+                    SpeedCtrl_Update(&g_spd);
+                }
+            }
+            break;
+
+            default:
             break;
         }
     }
@@ -110,8 +137,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == KEY3_Pin)
     {
-        g_op_mode = (g_op_mode + 1) % 3;
+        g_op_mode = (g_op_mode + 1) % 4;
         g_debug_run = 0;
+        g_dist_done = 0;
         SpeedCtrl_SetTargets(&g_spd, 0, 0);
         SpeedCtrl_Update(&g_spd);
         TB6612_Brake();
@@ -140,6 +168,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case 2: /* 巡线: 启动 */
             LineTrack_Init(&g_trk);
             break;
+        case 3: /* 直行测距: 启动 */
+            g_dist_done = 0;
+            g_dist_accum = 0;
+            TB6612_ResetEncoder();
+            SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+            break;
         }
     }
     else if (GPIO_Pin == KEY1_Pin)
@@ -150,6 +184,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 if (g_debug_run) SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 break;
         case 1: g_debug_angle -= 15; if (g_debug_angle < -180) g_debug_angle = -180; break;
+        case 3: if (g_dist_target > 100) g_dist_target -= 100; break;
         }
     }
     else if (GPIO_Pin == KEY2_Pin)
@@ -160,6 +195,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 if (g_debug_run) SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 break;
         case 1: g_debug_angle += 15; if (g_debug_angle > 180) g_debug_angle = 180; break;
+        case 3: if (g_dist_target < 10000) g_dist_target += 100; break;
         }
     }
 }
@@ -244,6 +280,18 @@ int main(void)
              g_trk.base_speed, g_trk.correction,
              g_spd.target_l, g_spd.actual_l, g_spd.target_r, g_spd.actual_r,
              Tracking_GetRaw());
+      break;
+
+    case 3:
+      OLED_PrintASCIIString(40, 14, g_dist_done ? "DONE" : "RUN", &afont12x6, OLED_COLOR_NORMAL);
+      sprintf(msg, "Tgt:%d K1-100 K2+100", (int)g_dist_target);
+      OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
+      sprintf(msg, "Acc:%d", (int)g_dist_accum);
+      OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
+      sprintf(msg, "TL:%d AL:%d", g_spd.target_l, g_spd.actual_l);
+      OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
+      sprintf(msg, "TR:%d AR:%d", g_spd.target_r, g_spd.actual_r);
+      OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
       break;
     }
 
