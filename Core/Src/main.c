@@ -118,7 +118,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 int32_t ar = TB6612_GetRightSpeed();
                 if (al < 0) al = -al;
                 if (ar < 0) ar = -ar;
-                g_dist_accum += (al + ar) / 2;   /* 每10ms累加绝对值 */
+                g_dist_accum += (al + ar) / 2;
+                static uint8_t dist_log = 0;
+                if (++dist_log >= 20) { dist_log = 0;
+                    printf("[DIST] acc=%d/%d spdL=%d spdR=%d\r\n",
+                           (int)g_dist_accum, (int)g_dist_target, al, ar);
+                }
                 if (g_dist_accum >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
