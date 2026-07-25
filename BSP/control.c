@@ -160,13 +160,40 @@ static float Outer_Angle(void)
 
         if (g_car_state == STATE_TURN)
         {
-            g_steer_mode = 2;
-            g_base_speed = g_speed_init;
-            g_car_state = STATE_LINE;
-            g_pid_steer.integral   = 0.0f;
-            g_pid_steer.prev_error = 0.0f;
-            g_pid_L.integral = 0.0f;
-            g_pid_R.integral = 0.0f;
+            uint8_t done = 0;
+            if (g_turn_is_lap)
+            {
+                g_turn_count++;
+                printf("[TURN] Complete, lap=%d/%d turn=%d/4\r\n",
+                       g_lap_count + 1, g_lap_target, g_turn_count);
+                if (g_turn_count >= 4)
+                {
+                    g_turn_count = 0;
+                    g_lap_count++;
+                    printf("[LAP] Lap %d/%d completed!\r\n",
+                           g_lap_count, g_lap_target);
+                    if (g_lap_count >= g_lap_target)
+                    {
+                        printf("[DONE] All %d laps done!\r\n", g_lap_target);
+                        Control_Stop();
+                        g_car_state = STATE_STOP;
+                        beep_cnt = 300;
+                        g_turn_is_lap = 0;
+                        done = 1;
+                    }
+                }
+                g_turn_is_lap = 0;
+            }
+            if (!done)
+            {
+                g_steer_mode = 2;
+                g_base_speed = g_speed_init;
+                g_car_state = STATE_LINE;
+                g_pid_steer.integral   = 0.0f;
+                g_pid_steer.prev_error = 0.0f;
+                g_pid_L.integral = 0.0f;
+                g_pid_R.integral = 0.0f;
+            }
         }
         else
         {
@@ -189,7 +216,7 @@ static float Outer_Steering(void)
     return PID_Calc(&g_pid_steer, (float)g_tracking_offset);
 }
 
-/* ==================== 检测层: Z轴转弯+圈数 ==================== */
+/* ==================== 检测层: Z轴转弯监测(仅日志, 不计圈) ==================== */
 
 static float   g_prev_z   = 0.0f;
 static float   g_z_accum  = 0.0f;
@@ -210,24 +237,9 @@ static void Detect_ZTurn(void)
         if (g_z_stable < 10) g_z_stable++;
         if (g_z_stable == 10 && g_z_accum > Z_ACCUM_MIN)
         {
-            g_turn_count++;
-            printf("[Z-TURN] turn=%d/4 accum=%.0f Z=%.1f\r\n",
-                   g_turn_count, g_z_accum, cur_z);
+            printf("[Z-TURN] accum=%.0f Z=%.1f (ref only)\r\n",
+                   g_z_accum, cur_z);
             g_z_accum = 0.0f;
-
-            if (g_turn_count >= 4)
-            {
-                g_turn_count = 0;
-                g_lap_count++;
-                printf("[Z-LAP] lap=%d/%d\r\n", g_lap_count, g_lap_target);
-                if (g_lap_count >= g_lap_target)
-                {
-                    printf("[Z-DONE] All laps done!\r\n");
-                    Control_Stop();
-                    g_car_state = STATE_STOP;
-                    beep_cnt = 300;
-                }
-            }
         }
     }
     g_prev_z = cur_z;
