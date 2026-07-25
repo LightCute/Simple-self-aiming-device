@@ -189,6 +189,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 g_dist_accum = 0;
                 TB6612_ResetEncoder();
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+                printf("[DIST] Start, target=%d\r\n", (int)g_dist_target);
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
         }
@@ -243,6 +244,7 @@ int main(void)
   MPU6050_CalibrateGyro(&hi2c2, 500);
   HAL_Delay(999);
   TB6612_Init();
+  TB6612_ResetEncoder();
   SpeedCtrl_Init(&g_spd);
   AngleTurn_Init(&g_ang);
   LineTrack_Init(&g_trk);
