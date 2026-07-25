@@ -114,9 +114,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         case 3: /* 直行测距 */
             if (g_dist_run)
             {
-                int32_t el, er;
-                TB6612_GetEncoder(&el, &er);
-                g_dist_accum = (el + er) / 2;
+                int32_t al = TB6612_GetLeftSpeed();
+                int32_t ar = TB6612_GetRightSpeed();
+                if (al < 0) al = -al;
+                if (ar < 0) ar = -ar;
+                g_dist_accum += (al + ar) / 2;   /* 每10ms累加绝对值 */
                 if (g_dist_accum >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
