@@ -41,8 +41,6 @@ int16_t  g_angle_base  = 10;
 int32_t  g_dist_target = 500;
 int32_t  g_dist_accum  = 0;
 uint8_t  g_dist_run    = 0;
-int32_t  g_dist_prev_l = 0;   /* 上帧左编码值 */
-int32_t  g_dist_prev_r = 0;   /* 上帧右编码值 */
 
 uint8_t  g_track_run   = 0;    /* 巡线启/停 */
 /* USER CODE END PV */
@@ -116,12 +114,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         case 3: /* 直行测距 */
             if (g_dist_run)
             {
-                int32_t el, er;
-                TB6612_GetEncoder(&el, &er);
-                int32_t dl = (el > g_dist_prev_l) ? (el - g_dist_prev_l) : (g_dist_prev_l - el);
-                int32_t dr = (er > g_dist_prev_r) ? (er - g_dist_prev_r) : (g_dist_prev_r - er);
+                int32_t dl, dr;
+                TB6612_GetDistIncrement(&dl, &dr);
                 g_dist_accum += (dl + dr) / 2;
-                g_dist_prev_l = el; g_dist_prev_r = er;
                 if (g_dist_accum >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
@@ -188,7 +183,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             g_dist_run = !g_dist_run;
             if (g_dist_run) {
                 g_dist_accum = 0;
-                TB6612_GetEncoder(&g_dist_prev_l, &g_dist_prev_r);
+                TB6612_ResetEncoder();
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 printf("[DIST] Start, target=%d\r\n", (int)g_dist_target);
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
@@ -318,17 +313,18 @@ int main(void)
 
     case 4:
       {
-        int32_t el, er;
+        int32_t el, er, dl, dr;
         TB6612_GetEncoder(&el, &er);
+        TB6612_GetDistIncrement(&dl, &dr);
         OLED_PrintASCIIString(0, 14, "ENCODER RAW", &afont12x6, OLED_COLOR_NORMAL);
         sprintf(msg, "L:%d", (int)el);
         OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
         sprintf(msg, "R:%d", (int)er);
         OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
-        sprintf(msg, "spdL:%d spdR:%d", g_spd.actual_l, g_spd.actual_r);
+        sprintf(msg, "dL:%d dR:%d", dl, dr);
         OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-        printf("Enc L:%d R:%d spdL:%d spdR:%d\r\n",
-               (int)el, (int)er, g_spd.actual_l, g_spd.actual_r);
+        printf("Enc L:%d R:%d dL:%d dR:%d\r\n",
+               (int)el, (int)er, dl, dr);
       }
       break;
     }

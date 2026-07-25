@@ -18,6 +18,13 @@ void TB6612_UpdateSpeed(void)    { TB6612_Car_UpdateSpeed(&g_car);        }
 int32_t TB6612_GetLeftSpeed(void)  { return g_car.MotorL.speed;           }
 int32_t TB6612_GetRightSpeed(void) { return g_car.MotorR.speed;           }
 
+/* 返回本次增量绝对值 (编码脉冲/10ms) */
+void TB6612_GetDistIncrement(int32_t *dl, int32_t *dr)
+{
+    *dl = g_car.MotorL.speed;  if (*dl < 0) *dl = -*dl;
+    *dr = g_car.MotorR.speed;  if (*dr < 0) *dr = -*dr;
+}
+
 /* ==================== 单电机控制 ==================== */
 
 /**

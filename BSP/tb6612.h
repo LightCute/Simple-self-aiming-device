@@ -41,6 +41,7 @@ void     TB6612_ResetEncoder(void);
 void     TB6612_UpdateSpeed(void);
 int32_t  TB6612_GetLeftSpeed(void);
 int32_t  TB6612_GetRightSpeed(void);
+void     TB6612_GetDistIncrement(int32_t *dl, int32_t *dr);  /* 返回本次增量绝对值 */
 
 /* ========== 单电机控制（可传入自定义实例）========== */
 void     TB6612_Motor_Init(TB6612_Motor_t *motor,
