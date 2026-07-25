@@ -376,20 +376,20 @@ void Control(void)
     {
         uint8_t sharp = Tracking_IsSharpTurn();
 
-        if (sharp == 1)
-        {
-            g_base_speed = -(int16_t)(g_speed_init * g_arc_ratio);
-            g_car_state = STATE_TURN;
-            Control_SetRelativeAngle(90.0f);
-        }
-        else if (sharp == 2)
-        {
-            g_turn_is_lap = 1;
-            g_base_speed = -(int16_t)(g_speed_init * g_arc_ratio);
-            g_car_state = STATE_TURN;
-            Control_SetRelativeAngle(-90.0f);
-        }
-        else
+        // if (sharp == 1)
+        // {
+        //     g_base_speed = -(int16_t)(g_speed_init * g_arc_ratio);
+        //     g_car_state = STATE_TURN;
+        //     Control_SetRelativeAngle(90.0f);
+        // }
+        // else if (sharp == 2)
+        // {
+        //     g_turn_is_lap = 1;
+        //     g_base_speed = -(int16_t)(g_speed_init * g_arc_ratio);
+        //     g_car_state = STATE_TURN;
+        //     Control_SetRelativeAngle(-90.0f);
+        // }
+        //else
         {
             TB6612_UpdateSpeed();
             Control_Update();
