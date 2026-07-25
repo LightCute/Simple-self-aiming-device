@@ -62,7 +62,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         switch (g_op_mode)
         {
         case 0: /* 速度环 */
-            if (g_debug_run) g_spd.pwm_l = 0, SpeedCtrl_Update(&g_spd);
+            SpeedCtrl_Update(&g_spd);
             break;
 
         case 1: /* 角度转弯 */
@@ -124,7 +124,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 TB6612_ResetEncoder();
             }
-            else SpeedCtrl_SetTargets(&g_spd, 0, 0);
+            else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
         case 1: /* 角度转弯: 触发 */
             {
