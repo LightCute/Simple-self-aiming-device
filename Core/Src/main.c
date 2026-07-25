@@ -118,8 +118,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
-                    AngleTurn_Start(&g_ang, (ev == TRACK_LEFT) ? 90.0f : -90.0f);
-                    g_turning = 1;
+                    g_ang.beep_cnt = 10;   /* 蜂鸣0.1s */
                 }
             }
             break;
