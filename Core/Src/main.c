@@ -317,8 +317,9 @@ int main(void)
         TB6612_GetEncoder(&el, &er);
         TB6612_GetDistIncrement(&dl, &dr);
         OLED_PrintASCIIString(0, 14, "ENCODER RAW", &afont12x6, OLED_COLOR_NORMAL);
-        uint16_t dl_raw = (uint16_t)(-el);  /* -el = 原始16bit CNT值 */
-        uint16_t dr_raw = (uint16_t)(-er);
+        /* 还原16bit硬件CNT: 前进el<0→65535+|el|, 后退el>0→取反 */
+        uint16_t dl_raw = (el < 0) ? (uint16_t)(65535 + el) : (uint16_t)(-el);
+        uint16_t dr_raw = (er < 0) ? (uint16_t)(65535 + er) : (uint16_t)(-er);
         sprintf(msg, "L:%u", dl_raw);
         OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
         sprintf(msg, "R:%u", dr_raw);
