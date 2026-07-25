@@ -4,6 +4,7 @@
 
 extern MPU6050_t mpu6050;
 static float g_target_angle = 0.0f;
+float g_angle_tolerance = 12.0f;  /* 转弯到位容限(度) */
 
 static float Angle_Error(float target, float current)
 {
@@ -62,7 +63,7 @@ AngleState AngleTurn_Update(AngleTurn *a)
 
     a->correction = PID_Calc(&a->pid, angle_err);
 
-    if (abs_err < 12.0f)
+    if (abs_err < g_angle_tolerance)
     {
         a->correction = 0;
         a->state = ANGLE_DONE;

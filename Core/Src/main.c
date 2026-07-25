@@ -244,7 +244,8 @@ int main(void)
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "AngleZ:%.1f", mpu6050.KalmanAngleZ);
       OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
-      sprintf(msg, "Err:%.1f %s", AngleTurn_GetError(&g_ang),
+      sprintf(msg, "Err:%.1f Tol:%.0f %s", AngleTurn_GetError(&g_ang),
+              g_angle_tolerance,
               (g_ang.state == ANGLE_RUNNING) ? "RUN" : "DONE");
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "PWM L:%d R:%d", g_spd.pwm_l, g_spd.pwm_r);

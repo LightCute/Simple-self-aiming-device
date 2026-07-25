@@ -3,6 +3,8 @@
 
 #include "speed_ctrl.h"   /* for PID_t */
 
+extern float g_angle_tolerance;   /* 转弯到位判定: |err| < 此值=完成 */
+
 typedef enum { ANGLE_IDLE, ANGLE_RUNNING, ANGLE_DONE } AngleState;
 
 typedef struct {
