@@ -95,6 +95,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             case 5: /* 角度环: g_steer_mode=1, 角度PID */
                 TB6612_UpdateSpeed();
                 Control_Update();
+                if (g_steer_mode != 1)   /* 角度环刚完成 → 停车 */
+                {
+                    Control_Stop();
+                }
                 break;
             default:
                 break;
