@@ -317,14 +317,15 @@ int main(void)
         TB6612_GetEncoder(&el, &er);
         TB6612_GetDistIncrement(&dl, &dr);
         OLED_PrintASCIIString(0, 14, "ENCODER RAW", &afont12x6, OLED_COLOR_NORMAL);
-        sprintf(msg, "L:%d", -(int)el);      /* 取反: 前进=正值 */
+        uint16_t dl_raw = (uint16_t)(-el);  /* -el = 原始16bit CNT值 */
+        uint16_t dr_raw = (uint16_t)(-er);
+        sprintf(msg, "L:%u", dl_raw);
         OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
-        sprintf(msg, "R:%d", -(int)er);
+        sprintf(msg, "R:%u", dr_raw);
         OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
         sprintf(msg, "dL:%d dR:%d", dl, dr);
         OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-        printf("Enc L:%d R:%d dL:%d dR:%d\r\n",
-               -(int)el, -(int)er, dl, dr);
+        printf("Enc L:%u R:%u dL:%d dR:%d\r\n", dl_raw, dr_raw, dl, dr);
       }
       break;
     }
