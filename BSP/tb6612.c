@@ -18,11 +18,19 @@ void TB6612_UpdateSpeed(void)    { TB6612_Car_UpdateSpeed(&g_car);        }
 int32_t TB6612_GetLeftSpeed(void)  { return g_car.MotorL.speed;           }
 int32_t TB6612_GetRightSpeed(void) { return g_car.MotorR.speed;           }
 
-/* 返回本次增量绝对值 (编码脉冲/10ms) */
+/*
+ * 返回编码器累计值 (还原16bit硬件CNT: 前进0→65535, 后退65535→0)
+ * 每10ms调用, 内部处理16bit翻转和符号转换
+ */
 void TB6612_GetDistIncrement(int32_t *dl, int32_t *dr)
 {
-    *dl = g_car.MotorL.speed;  if (*dl < 0) *dl = -*dl;
-    *dr = g_car.MotorR.speed;  if (*dr < 0) *dr = -*dr;
+    int32_t el, er;
+    TB6612_GetEncoder(&el, &er);
+
+    /* el<0(前进-65535→0): 65535+el = 0→65535 */
+    /* el>0(后退0→-65535): -el 取反 */
+    *dl = (el < 0) ? (int32_t)(65535 + el) : (int32_t)(-el);
+    *dr = (er < 0) ? (int32_t)(65535 + er) : (int32_t)(-er);
 }
 
 /* ==================== 单电机控制 ==================== */

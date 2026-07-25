@@ -39,7 +39,8 @@ uint8_t  g_debug_run   = 0;
 int16_t  g_angle_base  = 10;
 
 int32_t  g_dist_target = 500;
-int32_t  g_dist_accum  = 0;
+int32_t  g_dist_start  = 0;    /* 起点编码值 */
+int32_t  g_dist_cur    = 0;    /* 当前编码值 */
 uint8_t  g_dist_run    = 0;
 
 uint8_t  g_track_run   = 0;    /* 巡线启/停 */
@@ -116,8 +117,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             {
                 int32_t dl, dr;
                 TB6612_GetDistIncrement(&dl, &dr);
-                g_dist_accum += (dl + dr) / 2;
-                if (g_dist_accum >= g_dist_target)
+                g_dist_cur = (dl + dr) / 2;
+                int32_t traveled = (g_dist_cur > g_dist_start)
+                    ? (g_dist_cur - g_dist_start)
+                    : (g_dist_cur + 65536 - g_dist_start);  /* 翻转处理 */
+                if (traveled >= g_dist_target)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
@@ -182,10 +186,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case 3: /* 直行测距: 启/停 */
             g_dist_run = !g_dist_run;
             if (g_dist_run) {
-                g_dist_accum = 0;
-                TB6612_ResetEncoder();
+                int32_t dl, dr;
+                TB6612_GetDistIncrement(&dl, &dr);
+                g_dist_start = (dl + dr) / 2;   /* 记录起点 */
                 SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
-                printf("[DIST] Start, target=%d\r\n", (int)g_dist_target);
+                printf("[DIST] Start, target=%d start=%d\r\n",
+                       (int)g_dist_target, (int)g_dist_start);
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
         case 4: /* 编码器: 清零 */
@@ -300,33 +306,30 @@ int main(void)
       OLED_PrintASCIIString(40, 14, g_dist_run ? "RUN" : "STOP", &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "Tgt:%d K1-100 K2+100", (int)g_dist_target);
       OLED_PrintASCIIString(0, 14, msg, &afont12x6, OLED_COLOR_NORMAL);
-      sprintf(msg, "Acc:%d", (int)g_dist_accum);
+      sprintf(msg, "Cur:%d", (int)g_dist_cur);
       OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TL:%d AL:%d", g_spd.target_l, g_spd.actual_l);
       OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
       sprintf(msg, "TR:%d AR:%d", g_spd.target_r, g_spd.actual_r);
       OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-      printf("[DIST] acc=%d/%d spdL=%d spdR=%d\r\n",
-             (int)g_dist_accum, (int)g_dist_target,
+      printf("[DIST] cur=%d/%d spdL=%d spdR=%d\r\n",
+             (int)g_dist_cur, (int)g_dist_target,
              g_spd.actual_l, g_spd.actual_r);
       break;
 
     case 4:
       {
-        int32_t el, er, dl, dr;
-        TB6612_GetEncoder(&el, &er);
+        int32_t dl, dr;
         TB6612_GetDistIncrement(&dl, &dr);
-        OLED_PrintASCIIString(0, 14, "ENCODER RAW", &afont12x6, OLED_COLOR_NORMAL);
-        /* 还原16bit硬件CNT: 前进el<0→65535+|el|, 后退el>0→取反 */
-        uint16_t dl_raw = (el < 0) ? (uint16_t)(65535 + el) : (uint16_t)(-el);
-        uint16_t dr_raw = (er < 0) ? (uint16_t)(65535 + er) : (uint16_t)(-er);
-        sprintf(msg, "L:%u", dl_raw);
+        OLED_PrintASCIIString(0, 14, "ENCODER", &afont12x6, OLED_COLOR_NORMAL);
+        sprintf(msg, "L:%d", (int)dl);
         OLED_PrintASCIIString(0, 26, msg, &afont12x6, OLED_COLOR_NORMAL);
-        sprintf(msg, "R:%u", dr_raw);
+        sprintf(msg, "R:%d", (int)dr);
         OLED_PrintASCIIString(0, 38, msg, &afont12x6, OLED_COLOR_NORMAL);
-        sprintf(msg, "dL:%d dR:%d", dl, dr);
+        sprintf(msg, "spdL:%d spdR:%d", g_spd.actual_l, g_spd.actual_r);
         OLED_PrintASCIIString(0, 50, msg, &afont12x6, OLED_COLOR_NORMAL);
-        printf("Enc L:%u R:%u dL:%d dR:%d\r\n", dl_raw, dr_raw, dl, dr);
+        printf("Enc L:%d R:%d spdL:%d spdR:%d\r\n",
+               (int)dl, (int)dr, g_spd.actual_l, g_spd.actual_r);
       }
       break;
     }
