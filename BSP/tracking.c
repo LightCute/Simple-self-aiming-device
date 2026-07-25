@@ -78,12 +78,18 @@ uint8_t Tracking_IsSharpTurn(void)
     uint8_t raw  = Tracking_GetRaw();
     uint8_t result = 0;
 
-    /* 右弯: bit7,6,5=111 (8,7,6全黑) AND bit0=0 (1白) */
-    if ((raw & 0xE0) == 0xE0 && (raw & 0x01) == 0x00)
+    /*
+     * 顺时针右弯: 线向右拐, 车前行时线偏到传感器左侧
+     * → 左侧传感器(1,2,3)见黑, 右端传感器(8)必白
+     */
+    if ((raw & 0x07) == 0x07 && (raw & 0x80) == 0x00)
         result = 2;
 
-    /* 左弯: bit2,1,0=111 (3,2,1全黑) AND bit7=0 (8白) */
-    else if ((raw & 0x07) == 0x07 && (raw & 0x80) == 0x00)
+    /*
+     * 逆时针左弯: 线向左拐, 车前行时线偏到传感器右侧
+     * → 右侧传感器(6,7,8)见黑, 左端传感器(1)必白
+     */
+    else if ((raw & 0xE0) == 0xE0 && (raw & 0x01) == 0x00)
         result = 1;
 
     if (result != 0)
