@@ -151,9 +151,21 @@ static float Outer_Angle(void)
 
     float correction = PID_Calc(&g_pid_angle, angle_err);
 
+    /* 每500ms输出一次角度环状态 */
+    {
+        static uint8_t angle_log_cnt = 0;
+        if (++angle_log_cnt >= 50) { angle_log_cnt = 0;
+            printf("[ANGLE] err=%.1f corr=%.1f Z=%.1f ref=%.1f target=%.1f max=%.0f\r\n",
+                   angle_err, correction, mpu6050.KalmanAngleZ,
+                   g_angle_ref, g_target_angle, g_pid_angle.output_max);
+        }
+    }
+
     /* 到位退出 */
     if (abs_err < 12.0f)
     {
+        printf("[ANGLE-DONE] err=%.1f Z=%.1f -> exit\r\n",
+               angle_err, mpu6050.KalmanAngleZ);
         g_pid_angle.integral = 0.0f;
         correction = 0.0f;
         beep_cnt = 50;
@@ -281,6 +293,19 @@ void Control_Update(void)
 
     /* 内环速度PID */
     Inner_Speed();
+
+    /* 角度环模式输出PWM日志 */
+    if (g_steer_mode == 1)
+    {
+        static uint8_t pwm_log = 0;
+        if (++pwm_log >= 50) { pwm_log = 0;
+            printf("[PWM] L:%d R:%d TgtL:%d TgtR:%d ActL:%d ActR:%d base:%d corr:%.1f\r\n",
+                   g_pwm_left, g_pwm_right,
+                   g_target_left, g_target_right,
+                   g_actual_left, g_actual_right,
+                   (int)g_base_speed, correction);
+        }
+    }
 
     /* 蜂鸣器 */
     Beep_Update();
