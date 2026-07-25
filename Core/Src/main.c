@@ -17,6 +17,7 @@
 #include "mpu6050.h"
 #include "stdio.h"
 #include "tb6612.h"
+#include "tracking.h"
 #include "speed_ctrl.h"
 #include "angle_turn.h"
 #include "line_track.h"
