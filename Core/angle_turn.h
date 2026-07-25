@@ -12,11 +12,13 @@ typedef struct {
     float      ref_angle;
     float      correction;
     AngleState state;
+    uint16_t   beep_cnt;     /* 到位蜂鸣计数 */
 } AngleTurn;
 
 void       AngleTurn_Init(AngleTurn *a);
 void       AngleTurn_Start(AngleTurn *a, float delta_deg);
 AngleState AngleTurn_Update(AngleTurn *a);
 float      AngleTurn_GetError(AngleTurn *a);
+void       AngleTurn_Beep(AngleTurn *a);
 
 #endif

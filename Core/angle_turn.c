@@ -1,10 +1,11 @@
 #include "angle_turn.h"
 #include "mpu6050.h"
+#include "main.h"
 #include <math.h>
 
 extern MPU6050_t mpu6050;
 static float g_target_angle = 0.0f;
-float g_angle_tolerance = 12.0f;  /* 转弯到位容限(度) */
+float g_angle_tolerance = 8.0f;  /* 转弯到位容限(度) */
 
 static float Angle_Error(float target, float current)
 {
@@ -31,11 +32,12 @@ static float PID_Calc(PID_t *pid, float error)
 
 void AngleTurn_Init(AngleTurn *a)
 {
-    a->pid.Kp = 0.01f; a->pid.Ki = 0.0001f; a->pid.Kd = 0.01f;
+    a->pid.Kp = 10000.0f; a->pid.Ki = 0.1f; a->pid.Kd = 10.0f;
     a->pid.integral = 0; a->pid.prev_error = 0;
     a->pid.integral_max = 200; a->pid.output_max = 300;
     a->correction = 0.0f;
     a->state = ANGLE_IDLE;
+    a->beep_cnt = 0;
 }
 
 void AngleTurn_Start(AngleTurn *a, float delta_deg)
@@ -67,6 +69,7 @@ AngleState AngleTurn_Update(AngleTurn *a)
     {
         a->correction = 0;
         a->state = ANGLE_DONE;
+        a->beep_cnt = 10;   /* 蜂鸣 10×10ms = 100ms */
     }
 
     return a->state;
@@ -76,4 +79,14 @@ float AngleTurn_GetError(AngleTurn *a)
 {
     float abs_target = a->ref_angle + g_target_angle;
     return Angle_Error(abs_target, mpu6050.KalmanAngleZ);
+}
+
+void AngleTurn_Beep(AngleTurn *a)
+{
+    if (a->beep_cnt > 0) {
+        HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+        a->beep_cnt--;
+    } else {
+        HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
+    }
 }

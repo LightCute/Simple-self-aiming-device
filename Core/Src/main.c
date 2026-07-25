@@ -37,7 +37,7 @@ LineTrack g_trk;
 int16_t  g_debug_speed = 20;
 float    g_debug_angle = 90.0f;
 uint8_t  g_debug_run   = 0;
-int16_t  g_angle_base  = 0;    /* 角度转弯基速, 0=原地转, >0=弧线转 */
+int16_t  g_angle_base  = 10;    /* 角度转弯基速, 0=原地转, >0=弧线转 */
 /* USER CODE END PV */
 
 void SystemClock_Config(void);
@@ -61,6 +61,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         MPU6050_Read_All(&hi2c2, &mpu6050);
         TB6612_UpdateSpeed();
 
+        AngleTurn_Beep(&g_ang);
+
         switch (g_op_mode)
         {
         case 0: /* 速度环 */
@@ -72,8 +74,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
             {
                 AngleTurn_Update(&g_ang);
                 SpeedCtrl_SetTargets(&g_spd,
-                    (int16_t)(g_angle_base - g_ang.correction),
-                    (int16_t)(g_angle_base + g_ang.correction));
+                    (int16_t)(g_angle_base + g_ang.correction)/10,
+                    (int16_t)(g_angle_base - g_ang.correction)/10);
                 SpeedCtrl_Update(&g_spd);
             }
             else if (g_ang.state == ANGLE_DONE)
