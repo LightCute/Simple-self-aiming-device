@@ -206,9 +206,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         case 3: /* 直行测距: 启/停 */
             g_dist_run = !g_dist_run;
             if (g_dist_run) {
+                TB6612_ResetEncoder();          /* 强清CNT=0, 起点归零 */
                 int32_t dl, dr;
                 TB6612_GetDistIncrement(&dl, &dr);
-                g_dist_start = (dl + dr) / 2;
+                g_dist_start = (dl + dr) / 2;   /* 此时应为0 */
                 int16_t spd = (int16_t)g_debug_speed;
                 if (g_dist_target < 0) spd = -spd;   /* 负目标=后退 */
                 SpeedCtrl_SetTargets(&g_spd, spd, spd);
