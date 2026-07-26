@@ -27,7 +27,7 @@ void TB6612_GetDistIncrement(int32_t *dl, int32_t *dr)
     int32_t el, er;
     TB6612_GetEncoder(&el, &er);
 
-    /* el<0(前进): 65535+el = 0→65535; el>0(后退): 直接输出 */
+    /* el<0: 前进-65535→0 → 显示0→65535; 后退0→-1→-2 → 显示65535→65534 */
     *dl = (el < 0) ? (int32_t)(65535 + el) : el;
     *dr = (er < 0) ? (int32_t)(65535 + er) : er;
 }
