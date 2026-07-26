@@ -45,7 +45,11 @@ static Command serial_poll(char *data)
     if (strcmp(s, "-") == 0) return CMD_DOWN;
 
     /* 非系统命令 → CMD_CUSTOM, 传首字符 */
-    if (s[0]) { *data = s[0]; return CMD_CUSTOM; }
+    if (s[0]) {
+        *data = s[0];
+        printf("?%s\r\n", s);  /* 回显未知命令, 方便调试 */
+        return CMD_CUSTOM;
+    }
     return CMD_NONE;
 }
 

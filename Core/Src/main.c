@@ -117,11 +117,13 @@ int main(void)
     if (cmd == CMD_NEXT) {
         g_cur_mode = (g_cur_mode + 1) % MODE_COUNT;
         g_modes[g_cur_mode]->on_enter();
+        HAL_Delay(5);  /* 无线模块TX/RX切换延时 */
         printf("[ACK] mode=%s\r\n", g_modes[g_cur_mode]->name);
     }
     /* --- 传给当前模式处理 --- */
     else if (cmd != CMD_NONE) {
         g_modes[g_cur_mode]->on_command(cmd, cmd_data);
+        HAL_Delay(5);
         if (cmd == CMD_CUSTOM)
             printf("[ACK] cmd='%s'\r\n", CmdSerial_GetString());
         else
