@@ -62,6 +62,7 @@ static void tb_init(void) { TB6612_Init(); TB6612_ResetEncoder(); }
 /* 每10ms由ISR调用: 速度闭环 */
 static void tb_update(void)
 {
+    TB6612_UpdateSpeed();   /* 读编码器硬件 → 更新 MotorL/R.speed */
     int16_t al = TB6612_GetLeftSpeed();
     int16_t ar = TB6612_GetRightSpeed();
     g_chassis_tb6612.actual_l = al;
