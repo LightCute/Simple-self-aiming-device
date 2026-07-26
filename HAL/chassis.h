@@ -16,6 +16,8 @@ typedef struct {
     void (*get_encoders)(int32_t *left, int32_t *right);
 
     int16_t actual_l, actual_r;
+    int16_t target_l, target_r;      /* debug可读 */
+    uint8_t enabled;                 /* 1=PID运行 */
     PID_Params *pid_left;
     PID_Params *pid_right;
 } Chassis;

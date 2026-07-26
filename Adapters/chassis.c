@@ -1,7 +1,7 @@
 #include "chassis.h"
 #include "HAL/motor.h"
 #include "Middleware/speed_ctrl.h"
-#include "tb6612.h"   /* for g_motor_tb6612 */
+#include "BSP/tb6612.h"   /* for g_motor_tb6612 */
 
 static const Motor *g_motor = &g_motor_tb6612;
 static SpeedCtrl    g_spd;
