@@ -21,7 +21,6 @@ static void spd_isr(void) {
     if (g_run) {
         g_chassis->set_speeds(g_speed, g_speed);
     }
-    ChassisTB_Update(g_chassis);   /* PID闭环更新 */
 }
 
 static void spd_ui(void) {
