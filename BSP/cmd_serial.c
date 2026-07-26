@@ -1,5 +1,6 @@
 #include "cmd_serial.h"
 #include "usart.h"
+#include <stdio.h>
 #include <string.h>
 
 static uint8_t  g_rx_byte = 0;
