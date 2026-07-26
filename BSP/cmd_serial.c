@@ -48,4 +48,10 @@ static Command serial_poll(char *data)
     return CMD_NONE;
 }
 
+/* 供模式获取原始字符串命令 */
+const char *CmdSerial_GetString(void)
+{
+    return (const char *)g_rx_buf;
+}
+
 CommandSource g_src_serial = { .poll = serial_poll };
