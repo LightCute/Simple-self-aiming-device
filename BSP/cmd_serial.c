@@ -12,6 +12,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart == &huart8)
     {
+        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);   /* LED翻转=收到字节 */
         char ch = (char)g_rx_byte;
         if (ch == '\r' || ch == '\n')
         {
@@ -23,7 +24,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         {
             g_rx_buf[g_rx_idx++] = ch;
         }
-        HAL_UART_Receive_IT(&huart8, &g_rx_byte, 1);  /* 继续接收 */
+        HAL_UART_Receive_IT(&huart8, &g_rx_byte, 1);
     }
 }
 

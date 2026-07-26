@@ -31,8 +31,7 @@ static void imu_ui(void) {
 
     g_disp->flush();
 
-    g_log->data("Y:%.1f P:%.1f R:%.1f",
-                (double)g_imu->yaw, (double)g_imu->pitch, (double)g_imu->roll);
+    /* g_log->data("Y:%.1f P:%.1f R:%.1f", ...); -- 暂时关闭 */
 }
 
 static void imu_cmd(Command cmd, char data) {

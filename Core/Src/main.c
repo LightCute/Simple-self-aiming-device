@@ -117,10 +117,15 @@ int main(void)
     if (cmd == CMD_NEXT) {
         g_cur_mode = (g_cur_mode + 1) % MODE_COUNT;
         g_modes[g_cur_mode]->on_enter();
+        printf("[ACK] mode=%s\r\n", g_modes[g_cur_mode]->name);
     }
     /* --- 传给当前模式处理 --- */
     else if (cmd != CMD_NONE) {
         g_modes[g_cur_mode]->on_command(cmd, cmd_data);
+        if (cmd == CMD_CUSTOM)
+            printf("[ACK] cmd='%s'\r\n", CmdSerial_GetString());
+        else
+            printf("[ACK] cmd=%d\r\n", (int)cmd);
     }
 
     /* --- UI 刷新 --- */
