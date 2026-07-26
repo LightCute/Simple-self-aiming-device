@@ -45,8 +45,10 @@ static void tb_get_encoders(int32_t *left, int32_t *right)
     TB6612_GetEncoder(left, right);
 }
 
+static void tb_init(void) { TB6612_Init(); TB6612_ResetEncoder(); }
+
 /* 每10ms由ISR调用: 速度闭环 */
-void ChassisTB_Update(Chassis *c)
+static void tb_update(Chassis *c)
 {
     int16_t al = TB6612_GetLeftSpeed();
     int16_t ar = TB6612_GetRightSpeed();
@@ -63,10 +65,12 @@ void ChassisTB_Update(Chassis *c)
 }
 
 Chassis g_chassis_tb6612 = {
-    .set_speeds    = tb_set_speeds,
-    .stop          = tb_stop,
-    .brake         = tb_brake,
-    .get_encoders  = tb_get_encoders,
+    .init         = tb_init,
+    .update       = tb_update,
+    .set_speeds   = tb_set_speeds,
+    .stop         = tb_stop,
+    .brake        = tb_brake,
+    .get_encoders = tb_get_encoders,
     .actual_l = 0, .actual_r = 0,
     .pid_left  = &g_pid_l,
     .pid_right = &g_pid_r,

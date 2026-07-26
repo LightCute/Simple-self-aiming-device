@@ -2,6 +2,7 @@
 #define HAL_DISPLAY_H
 
 typedef struct {
+    void (*init)(void);
     void (*clear)(void);
     void (*show_str)(int x, int y, const char *s);
     void (*show_num)(int x, int y, float v, int dec);

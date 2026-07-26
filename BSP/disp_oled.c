@@ -19,6 +19,7 @@ static void disp_show_num(int x, int y, float v, int dec) {
 static void disp_flush(void) { OLED_ShowFrame(); }
 
 Display g_disp_oled = {
+    .init     = OLED_Init,
     .clear    = disp_clear,
     .show_str = disp_show_str,
     .show_num = disp_show_num,

@@ -1,7 +1,7 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c  - 重构v2: 调度器
+  * @file           : main.c  - 重构v2: 纯接口调度器
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -12,7 +12,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-/* --- HAL 抽象接口 --- */
+/* --- HAL 抽象接口 (纯虚) --- */
 #include "HAL/imu.h"
 #include "HAL/display.h"
 #include "HAL/logger.h"
@@ -20,15 +20,12 @@
 #include "HAL/app_mode.h"
 #include "HAL/chassis.h"
 
-/* --- BSP 注入 --- */
-#include "oled.h"
-#include "mpu6050.h"
+/* --- BSP 注入 (只在main.c出现一次) --- */
 #include "imu_mpu6050.h"
 #include "disp_oled.h"
 #include "log_uart.h"
 #include "cmd_keys.h"
 #include "cmd_serial.h"
-#include "tb6612.h"
 #include "chassis_tb6612.h"
 
 /* --- App 模式 --- */
@@ -37,7 +34,7 @@
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
-/* --- 全局接口指针 (依赖注入) --- */
+/* --- 依赖注入: 接口指针指向具体实现 --- */
 IMU      *g_imu     = &g_imu_mpu6050;
 Display  *g_disp    = &g_disp_oled;
 Logger   *g_log     = &g_log_uart;
@@ -47,7 +44,7 @@ Chassis  *g_chassis = &g_chassis_tb6612;
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
-/* --- 模式注册 --- */
+/* --- 模式注册 (加新模式只需加一行) --- */
 static const AppMode *g_modes[] = { &mode_imu_test, &mode_speed };
 #define MODE_COUNT 2
 static uint8_t g_cur_mode = 0;
@@ -57,25 +54,17 @@ void SystemClock_Config(void);
 static void MPU_Config(void);
 
 /* USER CODE BEGIN 0 */
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     static uint8_t tick_1ms = 0;
     if (htim != &htim6) return;
     tick_1ms++;
-    if (tick_1ms >= 10)
-    {
+    if (tick_1ms >= 10) {
         tick_1ms = 0;
-        TB6612_UpdateSpeed();                    /* 编码器→速度 */
+        g_imu->update();
+        g_chassis->update(g_chassis);    /* PID闭环 */
         g_modes[g_cur_mode]->on_isr();
-        ChassisTB_Update(g_chassis);             /* PID→PWM */
     }
-}
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-    if (GPIO_Pin == KEY3_Pin) CmdKeys_NotifyKEY3();
-    if (GPIO_Pin == KEY4_Pin) CmdKeys_NotifyKEY4();
 }
 /* USER CODE END 0 */
 
@@ -95,15 +84,14 @@ int main(void)
   MX_UART8_Init();
 
   /* USER CODE BEGIN 2 */
-  OLED_Init();
+  g_disp->init();
   while (g_imu->init()) {
     HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     HAL_Delay(499);
   }
-  MPU6050_CalibrateGyro(&hi2c2, 500);
+  g_imu->calibrate(500);
   HAL_Delay(999);
-  TB6612_Init();
-  TB6612_ResetEncoder();
+  g_chassis->init();
   CmdSerial_Init();
   HAL_TIM_Base_Start_IT(&htim6);
 
@@ -112,26 +100,24 @@ int main(void)
 
   while (1)
   {
-    /* --- 轮询所有命令源 --- */
+    /* --- 轮询命令源 --- */
     Command cmd = CMD_NONE;
     for (int i = 0; i < SRC_COUNT; i++) {
         Command c = g_sources[i]->poll();
         if (c != CMD_NONE) cmd = c;
     }
 
-    /* --- 系统命令: 模式切换 --- */
+    /* --- 模式切换 --- */
     if (cmd == CMD_NEXT) {
         g_cur_mode = (g_cur_mode + 1) % MODE_COUNT;
         g_modes[g_cur_mode]->on_enter();
     }
-    /* --- 模式内部命令 --- */
     else if (cmd != CMD_NONE) {
         g_modes[g_cur_mode]->on_command(cmd);
     }
 
     /* --- UI 刷新 --- */
     g_modes[g_cur_mode]->on_ui();
-
     HAL_Delay(10);
     /* USER CODE END WHILE */
     /* USER CODE BEGIN 3 */

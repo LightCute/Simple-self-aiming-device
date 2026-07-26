@@ -6,8 +6,15 @@ static uint8_t g_key3_flag = 0;
 static uint8_t g_key4_flag = 0;
 
 /* EXTI回调中置标志 */
-void CmdKeys_NotifyKEY3(void) { g_key3_flag = 1; }
-void CmdKeys_NotifyKEY4(void) { g_key4_flag = 1; }
+static void notify_key3(void) { g_key3_flag = 1; }
+static void notify_key4(void) { g_key4_flag = 1; }
+
+/* GPIO EXTI 回调: 直接处理按键 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if (GPIO_Pin == KEY3_Pin) notify_key3();
+    if (GPIO_Pin == KEY4_Pin) notify_key4();
+}
 
 static Command key_poll(void)
 {
