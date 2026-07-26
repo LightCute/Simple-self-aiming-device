@@ -70,11 +70,17 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : KEY1_Pin KEY2_Pin KEY3_Pin (全部外部中断) */
-  GPIO_InitStruct.Pin = KEY1_Pin|KEY2_Pin|KEY3_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  /*Configure GPIO pins : KEY1_Pin KEY2_Pin */
+  GPIO_InitStruct.Pin = KEY1_Pin|KEY2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : KEY3_Pin */
+  GPIO_InitStruct.Pin = KEY3_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(KEY3_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : KEY4_Pin */
   GPIO_InitStruct.Pin = KEY4_Pin;
@@ -127,9 +133,6 @@ void MX_GPIO_Init(void)
   HAL_GPIO_Init(SensorR_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
-
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
