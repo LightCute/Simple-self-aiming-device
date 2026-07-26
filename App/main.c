@@ -62,7 +62,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (tick_1ms >= 10) {
         tick_1ms = 0;
         g_imu->update();
-        g_chassis->update(g_chassis);    /* PID闭环 */
+        g_chassis->update();             /* PID闭环 */
         g_modes[g_cur_mode]->on_isr();
     }
 }

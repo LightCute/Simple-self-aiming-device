@@ -48,12 +48,12 @@ static void tb_get_encoders(int32_t *left, int32_t *right)
 static void tb_init(void) { TB6612_Init(); TB6612_ResetEncoder(); }
 
 /* 每10ms由ISR调用: 速度闭环 */
-static void tb_update(Chassis *c)
+static void tb_update(void)
 {
     int16_t al = TB6612_GetLeftSpeed();
     int16_t ar = TB6612_GetRightSpeed();
-    c->actual_l = al;
-    c->actual_r = ar;
+    g_chassis_tb6612.actual_l = al;
+    g_chassis_tb6612.actual_r = ar;
 
     float el = (float)(g_target_l - al);
     float er = (float)(g_target_r - ar);
