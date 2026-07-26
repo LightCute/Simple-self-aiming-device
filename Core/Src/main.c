@@ -12,6 +12,8 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
+
 /* --- HAL 抽象接口 (纯虚) --- */
 #include "HAL/imu.h"
 #include "HAL/display.h"
