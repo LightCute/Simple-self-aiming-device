@@ -119,6 +119,7 @@ int main(void)
         g_modes[g_cur_mode]->on_enter();
         HAL_Delay(5);  /* 无线模块TX/RX切换延时 */
         printf("[ACK] mode=%s\r\n", g_modes[g_cur_mode]->name);
+        fflush(stdout);
     }
     /* --- 传给当前模式处理 --- */
     else if (cmd != CMD_NONE) {
@@ -128,6 +129,7 @@ int main(void)
             printf("[ACK] cmd='%s'\r\n", CmdSerial_GetString());
         else
             printf("[ACK] cmd=%d\r\n", (int)cmd);
+        fflush(stdout);
     }
 
     /* --- UI 刷新 --- */

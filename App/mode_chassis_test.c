@@ -53,13 +53,7 @@ static void cht_ui(void) {
 
     g_disp->flush();
 
-    if (g_enc_show) {
-        int32_t el, er;
-        g_chassis->get_encoders(&el, &er);
-        g_log->data("Enc L:%d R:%d Spd L:%d R:%d",
-                    (int)el, (int)er,
-                    g_chassis->actual_l, g_chassis->actual_r);
-    }
+    /* g_log->data("Enc... Spd..."); -- 刷屏, 暂时关闭 */
 }
 
 static void cht_cmd(Command cmd, char data) {

@@ -40,8 +40,7 @@ static void spd_ui(void) {
 
     g_disp->flush();
 
-    g_log->data("Spd:%d AL:%d AR:%d", g_speed,
-                g_chassis->actual_l, g_chassis->actual_r);
+    /* g_log->data("Spd:..."); -- 暂时关闭 */
 }
 
 static void spd_cmd(Command cmd, char data) {
