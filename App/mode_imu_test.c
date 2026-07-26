@@ -35,8 +35,8 @@ static void imu_ui(void) {
                 (double)g_imu->yaw, (double)g_imu->pitch, (double)g_imu->roll);
 }
 
-static void imu_cmd(Command cmd) {
-    (void)cmd;  /* 本模式不处理额外命令 */
+static void imu_cmd(Command cmd, char data) {
+    (void)cmd; (void)data;
 }
 
 const AppMode mode_imu_test = {

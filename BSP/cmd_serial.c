@@ -32,18 +32,19 @@ void CmdSerial_Init(void)
     HAL_UART_Receive_IT(&huart8, &g_rx_byte, 1);
 }
 
-static Command serial_poll(void)
+static Command serial_poll(char *data)
 {
     if (!g_rx_flag) return CMD_NONE;
     g_rx_flag = 0;
 
-    /* 解析单字符命令 */
     char *s = (char*)g_rx_buf;
     if (strcmp(s, "n") == 0) return CMD_NEXT;
     if (strcmp(s, "t") == 0) return CMD_TOGGLE;
     if (strcmp(s, "+") == 0) return CMD_UP;
     if (strcmp(s, "-") == 0) return CMD_DOWN;
 
+    /* 非系统命令 → CMD_CUSTOM, 传首字符 */
+    if (s[0]) { *data = s[0]; return CMD_CUSTOM; }
     return CMD_NONE;
 }
 

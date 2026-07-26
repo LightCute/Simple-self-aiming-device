@@ -31,6 +31,7 @@
 /* --- App 模式 --- */
 #include "mode_imu_test.h"
 #include "mode_speed.h"
+#include "mode_chassis_test.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -45,8 +46,8 @@ static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_speed };
-#define MODE_COUNT 2
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_speed, &mode_chassis_test };
+#define MODE_COUNT 3
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
@@ -102,18 +103,21 @@ int main(void)
   {
     /* --- 轮询命令源 --- */
     Command cmd = CMD_NONE;
+    char    cmd_data = 0;
     for (int i = 0; i < SRC_COUNT; i++) {
-        Command c = g_sources[i]->poll();
-        if (c != CMD_NONE) cmd = c;
+        char d = 0;
+        Command c = g_sources[i]->poll(&d);
+        if (c != CMD_NONE) { cmd = c; cmd_data = d; }
     }
 
-    /* --- 模式切换 --- */
+    /* --- 系统命令: 模式切换 --- */
     if (cmd == CMD_NEXT) {
         g_cur_mode = (g_cur_mode + 1) % MODE_COUNT;
         g_modes[g_cur_mode]->on_enter();
     }
+    /* --- 传给当前模式处理 --- */
     else if (cmd != CMD_NONE) {
-        g_modes[g_cur_mode]->on_command(cmd);
+        g_modes[g_cur_mode]->on_command(cmd, cmd_data);
     }
 
     /* --- UI 刷新 --- */

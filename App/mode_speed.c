@@ -44,7 +44,8 @@ static void spd_ui(void) {
                 g_chassis->actual_l, g_chassis->actual_r);
 }
 
-static void spd_cmd(Command cmd) {
+static void spd_cmd(Command cmd, char data) {
+    (void)data;
     switch (cmd) {
     case CMD_TOGGLE:
         g_run = !g_run;
