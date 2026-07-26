@@ -17,6 +17,7 @@
 #include "HAL/logger.h"
 
 /* --- BSP 注入 --- */
+#include "oled.h"
 #include "mpu6050.h"
 #include "imu_mpu6050.h"
 #include "disp_oled.h"
