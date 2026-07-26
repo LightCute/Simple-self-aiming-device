@@ -137,7 +137,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 }
                 else
                 {
-                    int16_t spd = (int16_t)g_debug_speed;
+                    int16_t spd = -(int16_t)g_debug_speed;
                     if (g_dist_target < 0) spd = -spd;
                     SpeedCtrl_SetTargets(&g_spd, spd, spd);
                     SpeedCtrl_Update(&g_spd);
