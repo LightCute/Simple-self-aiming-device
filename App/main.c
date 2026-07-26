@@ -41,7 +41,7 @@
 IMU      *g_imu     = &g_imu_mpu6050;
 Display  *g_disp    = &g_disp_oled;
 Logger   *g_log     = &g_log_uart;
-Chassis  *g_chassis = &g_chassis_tb6612;
+Chassis  *g_chassis = &g_chassis_inst;   /* chassis.c 的全局实例 */
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };

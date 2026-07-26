@@ -19,13 +19,13 @@ static void ch_update(void) {
     SpeedCtrl_SetActual(&g_spd, g_motor->speed_l, g_motor->speed_r);
     SpeedCtrl_Update(&g_spd);
     g_motor->set_pwm(g_spd.pwm_l, g_spd.pwm_r);
-    g_chassis.actual_l = g_spd.actual_l;
-    g_chassis.actual_r = g_spd.actual_r;
+    g_chassis_inst.actual_l = g_spd.actual_l;
+    g_chassis_inst.actual_r = g_spd.actual_r;
 }
 
 static void ch_set_speeds(int16_t l, int16_t r) {
     g_spd.target_l = l; g_spd.target_r = r;
-    g_chassis.target_l = l; g_chassis.target_r = r;
+    g_chassis_inst.target_l = l; g_chassis_inst.target_r = r;
     SpeedCtrl_ClearIntegral(&g_spd);
     g_spd.enabled = 1;
 }
@@ -49,7 +49,7 @@ static void ch_get_encoders(int32_t *l, int32_t *r) {
     *r = (er < 0) ? (int32_t)(65535 + er) : er;
 }
 
-Chassis g_chassis = {
+Chassis g_chassis_inst = {
     .init         = ch_init,
     .update       = ch_update,
     .set_speeds   = ch_set_speeds,
