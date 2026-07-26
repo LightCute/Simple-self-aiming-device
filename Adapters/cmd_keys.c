@@ -19,7 +19,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 static Command key_poll(char *data)
 {
     (void)data;  /* 按键不产生自定义数据 */
-{
+
     /* KEY3: 切换模式 */
     if (g_key3_flag) { g_key3_flag = 0; return CMD_NEXT; }
 

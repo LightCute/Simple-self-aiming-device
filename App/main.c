@@ -22,13 +22,13 @@
 #include "HAL/app_mode.h"
 #include "HAL/chassis.h"
 
-/* --- BSP 注入 (只在main.c出现一次) --- */
-#include "imu_mpu6050.h"
-#include "disp_oled.h"
-#include "log_uart.h"
-#include "cmd_keys.h"
-#include "cmd_serial.h"
-#include "chassis_tb6612.h"
+/* --- Adapters 注入 (只在main.c出现一次) --- */
+#include "Adapters/imu_mpu6050.h"
+#include "Adapters/disp_oled.h"
+#include "Adapters/log_uart.h"
+#include "Adapters/cmd_keys.h"
+#include "Adapters/cmd_serial.h"
+#include "Adapters/chassis.h"
 
 /* --- App 模式 --- */
 #include "mode_imu_test.h"

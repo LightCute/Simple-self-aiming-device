@@ -18,4 +18,4 @@ MDK-ARM/MPU6050H7/*.elf
 MDK-ARM/MPU6050H7/*.bin
 Drivers/
 MDK-ARM/
-docs/
+docs/.git.backup/

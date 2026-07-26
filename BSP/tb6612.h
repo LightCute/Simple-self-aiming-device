@@ -1,3 +1,5 @@
+#include "HAL/motor.h"
+
 #ifndef __TB6612_H__
 #define __TB6612_H__
 

@@ -3,7 +3,7 @@
 #include "HAL/display.h"
 #include "HAL/logger.h"
 #include "HAL/command.h"
-#include "cmd_serial.h"
+#include "Adapters/cmd_serial.h"
 #include <stdio.h>
 #include <string.h>
 
