@@ -118,11 +118,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 int32_t dl, dr;
                 TB6612_GetDistIncrement(&dl, &dr);
                 g_dist_cur = (dl + dr) / 2;
-                int32_t traveled = (g_dist_cur > g_dist_start)
-                    ? (g_dist_cur - g_dist_start)
-                    : (g_dist_cur + 65536 - g_dist_start);
-                int32_t remain  = g_dist_target - traveled;
-                if (remain <= 0)
+                int32_t traveled;
+                if (g_dist_target > 0)   /* 前进 */
+                    traveled = (g_dist_cur >= g_dist_start)
+                        ? (g_dist_cur - g_dist_start)
+                        : (g_dist_cur + 65536 - g_dist_start);
+                else                     /* 后退: 取绝对值距离 */
+                    traveled = (g_dist_start >= g_dist_cur)
+                        ? (g_dist_start - g_dist_cur)
+                        : (g_dist_start + 65536 - g_dist_cur);
+                int32_t target_abs = (g_dist_target > 0) ? g_dist_target : -g_dist_target;
+                if (traveled >= target_abs)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
