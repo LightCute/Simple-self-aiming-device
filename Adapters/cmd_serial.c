@@ -5,7 +5,7 @@
 
 static uint8_t  g_rx_byte = 0;
 static volatile uint8_t g_rx_flag = 0;
-static uint8_t g_rx_buf[16];
+static uint8_t g_rx_buf[32];
 static uint8_t g_rx_idx = 0;
 static uint8_t g_last_was_cr = 0;  /* 处理 \r\n 双字符结尾 */
 
@@ -35,7 +35,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
         else
         {
             g_last_was_cr = 0;
-            if (g_rx_idx < 15) g_rx_buf[g_rx_idx++] = ch;
+            if (g_rx_idx < 31) g_rx_buf[g_rx_idx++] = ch;
         }
         HAL_UART_Receive_IT(&huart8, &g_rx_byte, 1);
     }
