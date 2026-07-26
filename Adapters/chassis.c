@@ -15,10 +15,15 @@ static void ch_init(void) {
 
 static void ch_update(void) {
     if (!g_spd.enabled) return;
+    if (!g_motor) return;   /* 防御: 指针未注入 */
     g_motor->update_speed();
     SpeedCtrl_SetActual(&g_spd, g_motor->speed_l, g_motor->speed_r);
     SpeedCtrl_Update(&g_spd);
-    g_motor->set_pwm(g_spd.pwm_l, g_spd.pwm_r);
+    /* 限幅保护 */
+    int16_t pl = g_spd.pwm_l, pr = g_spd.pwm_r;
+    if (pl >  999) pl =  999; if (pl < -999) pl = -999;
+    if (pr >  999) pr =  999; if (pr < -999) pr = -999;
+    g_motor->set_pwm(pl, pr);
     g_chassis_inst.actual_l = g_spd.actual_l;
     g_chassis_inst.actual_r = g_spd.actual_r;
 }
