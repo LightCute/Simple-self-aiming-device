@@ -7,23 +7,35 @@ static uint8_t  g_rx_byte = 0;
 static volatile uint8_t g_rx_flag = 0;
 static uint8_t g_rx_buf[16];
 static uint8_t g_rx_idx = 0;
+static uint8_t g_last_was_cr = 0;  /* 处理 \r\n 双字符结尾 */
 
 /* UART8 接收中断回调 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     if (huart == &huart8)
     {
-        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);   /* LED翻转=收到字节 */
+        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
         char ch = (char)g_rx_byte;
-        if (ch == '\r' || ch == '\n')
+        if (ch == '\r')
         {
             g_rx_buf[g_rx_idx] = '\0';
-            g_rx_flag = 1;
+            if (g_rx_idx > 0) g_rx_flag = 1;  /* 有内容才触发 */
             g_rx_idx = 0;
+            g_last_was_cr = 1;
         }
-        else if (g_rx_idx < 15)
+        else if (ch == '\n')
         {
-            g_rx_buf[g_rx_idx++] = ch;
+            if (!g_last_was_cr) {               /* 单独的 \n, 非 \r\n 的第二个 */
+                g_rx_buf[g_rx_idx] = '\0';
+                if (g_rx_idx > 0) g_rx_flag = 1;
+                g_rx_idx = 0;
+            }
+            g_last_was_cr = 0;
+        }
+        else
+        {
+            g_last_was_cr = 0;
+            if (g_rx_idx < 15) g_rx_buf[g_rx_idx++] = ch;
         }
         HAL_UART_Receive_IT(&huart8, &g_rx_byte, 1);
     }
