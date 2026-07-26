@@ -1,7 +1,7 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : main.c  - 重构v2: 接口驱动调度器
+  * @file           : main.c  - 重构v2: 调度器
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -11,10 +11,13 @@
 #include "usart.h"
 #include "gpio.h"
 
-/* --- HAL 接口 --- */
+/* USER CODE BEGIN Includes */
+/* --- HAL 抽象接口 --- */
 #include "HAL/imu.h"
 #include "HAL/display.h"
 #include "HAL/logger.h"
+#include "HAL/command.h"
+#include "HAL/app_mode.h"
 
 /* --- BSP 注入 --- */
 #include "oled.h"
@@ -22,11 +25,28 @@
 #include "imu_mpu6050.h"
 #include "disp_oled.h"
 #include "log_uart.h"
+#include "cmd_keys.h"
+#include "cmd_serial.h"
 
+/* --- App 模式 --- */
+#include "mode_imu_test.h"
+/* USER CODE END Includes */
+
+/* USER CODE BEGIN PV */
 /* --- 全局接口指针 (依赖注入) --- */
-static IMU     *g_imu  = &g_imu_mpu6050;
-static Display *g_disp = &g_disp_oled;
-static Logger  *g_log  = &g_log_uart;
+IMU     *g_imu  = &g_imu_mpu6050;
+Display *g_disp = &g_disp_oled;
+Logger  *g_log  = &g_log_uart;
+
+/* --- 命令源 --- */
+static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
+#define SRC_COUNT 2
+
+/* --- 模式注册 --- */
+static const AppMode *g_modes[] = { &mode_imu_test };
+#define MODE_COUNT 1
+static uint8_t g_cur_mode = 0;
+/* USER CODE END PV */
 
 void SystemClock_Config(void);
 static void MPU_Config(void);
@@ -41,14 +61,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (tick_1ms >= 10)
     {
         tick_1ms = 0;
-        g_imu->update();       /* 读 IMU, 更新 yaw/pitch/roll */
+        g_modes[g_cur_mode]->on_isr();
     }
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    /* 预留按键处理 */
-    (void)GPIO_Pin;
+    if (GPIO_Pin == KEY3_Pin) CmdKeys_NotifyKEY3();
+    if (GPIO_Pin == KEY4_Pin) CmdKeys_NotifyKEY4();
 }
 /* USER CODE END 0 */
 
@@ -69,40 +89,45 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
   OLED_Init();
-  while (g_imu->init())
-  {
+  while (g_imu->init()) {
     HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
     HAL_Delay(499);
   }
   MPU6050_CalibrateGyro(&hi2c2, 500);
   HAL_Delay(999);
+  CmdSerial_Init();
   HAL_TIM_Base_Start_IT(&htim6);
-  g_log->info("IMU Test started");
+
+  g_modes[g_cur_mode]->on_enter();
   /* USER CODE END 2 */
 
   while (1)
   {
-    g_disp->clear();
-    g_disp->show_str(0, 0, "IMU TEST");
+    /* --- 轮询所有命令源 --- */
+    Command cmd = CMD_NONE;
+    for (int i = 0; i < SRC_COUNT; i++) {
+        Command c = g_sources[i]->poll();
+        if (c != CMD_NONE) cmd = c;
+    }
 
-    g_disp->show_str(0, 14, "Y:");
-    g_disp->show_num(24, 14, g_imu->yaw, 1);
+    /* --- 系统命令: 模式切换 --- */
+    if (cmd == CMD_NEXT) {
+        g_cur_mode = (g_cur_mode + 1) % MODE_COUNT;
+        g_modes[g_cur_mode]->on_enter();
+    }
+    /* --- 模式内部命令 --- */
+    else if (cmd != CMD_NONE) {
+        g_modes[g_cur_mode]->on_command(cmd);
+    }
 
-    g_disp->show_str(0, 26, "P:");
-    g_disp->show_num(24, 26, g_imu->pitch, 1);
-
-    g_disp->show_str(0, 38, "R:");
-    g_disp->show_num(24, 38, g_imu->roll, 1);
-
-    g_disp->flush();
-
-    g_log->data("Y:%.1f P:%.1f R:%.1f",
-                (double)g_imu->yaw,
-                (double)g_imu->pitch,
-                (double)g_imu->roll);
+    /* --- UI 刷新 --- */
+    g_modes[g_cur_mode]->on_ui();
 
     HAL_Delay(10);
+    /* USER CODE END WHILE */
+    /* USER CODE BEGIN 3 */
   }
+  /* USER CODE END 3 */
 }
 
 void SystemClock_Config(void)
