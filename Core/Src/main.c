@@ -196,7 +196,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             g_dist_run = !g_dist_run;
             if (g_dist_run) {
                 g_dist_accum = 0;
-                int16_t spd = (int16_t)g_debug_speed;
+                int16_t spd = -(int16_t)g_debug_speed;
                 if (g_dist_target < 0) spd = -spd;
                 SpeedCtrl_SetTargets(&g_spd, spd, spd);
                 printf("[DIST] Start, target=%d dir=%s\r\n",
