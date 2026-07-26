@@ -120,8 +120,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 g_dist_cur = (dl + dr) / 2;
                 int32_t traveled = (g_dist_cur > g_dist_start)
                     ? (g_dist_cur - g_dist_start)
-                    : (g_dist_cur + 65536 - g_dist_start);  /* 翻转处理 */
-                if (traveled >= g_dist_target)
+                    : (g_dist_cur + 65536 - g_dist_start);
+                int32_t remain  = g_dist_target - traveled;
+                if (remain <= 0)
                 {
                     SpeedCtrl_SetTargets(&g_spd, 0, 0);
                     SpeedCtrl_Update(&g_spd);
@@ -130,7 +131,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
                 }
                 else
                 {
-                    SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
+                    int16_t spd = (int16_t)g_debug_speed;
+                    if (g_dist_target < 0) spd = -spd;
+                    SpeedCtrl_SetTargets(&g_spd, spd, spd);
                     SpeedCtrl_Update(&g_spd);
                 }
             }
@@ -188,10 +191,13 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             if (g_dist_run) {
                 int32_t dl, dr;
                 TB6612_GetDistIncrement(&dl, &dr);
-                g_dist_start = (dl + dr) / 2;   /* 记录起点 */
-                SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
-                printf("[DIST] Start, target=%d start=%d\r\n",
-                       (int)g_dist_target, (int)g_dist_start);
+                g_dist_start = (dl + dr) / 2;
+                int16_t spd = (int16_t)g_debug_speed;
+                if (g_dist_target < 0) spd = -spd;   /* 负目标=后退 */
+                SpeedCtrl_SetTargets(&g_spd, spd, spd);
+                printf("[DIST] Start, target=%d start=%d dir=%s\r\n",
+                       (int)g_dist_target, (int)g_dist_start,
+                       (g_dist_target > 0) ? "FWD" : "REV");
             } else { SpeedCtrl_SetTargets(&g_spd, 0, 0); SpeedCtrl_Update(&g_spd); }
             break;
         case 4: /* 编码器: 清零 */
@@ -207,7 +213,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
                 if (g_debug_run) SpeedCtrl_SetTargets(&g_spd, g_debug_speed, g_debug_speed);
                 break;
         case 1: g_debug_angle -= 15; if (g_debug_angle < -180) g_debug_angle = -180; break;
-        case 3: if (g_dist_target > 100) g_dist_target -= 100; break;
+        case 3: if (g_dist_target > -10000) g_dist_target -= 100; break;
         }
     }
     else if (GPIO_Pin == KEY2_Pin)
