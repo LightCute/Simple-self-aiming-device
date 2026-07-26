@@ -18,6 +18,7 @@
 #include "HAL/logger.h"
 #include "HAL/command.h"
 #include "HAL/app_mode.h"
+#include "HAL/chassis.h"
 
 /* --- BSP 注入 --- */
 #include "oled.h"
@@ -27,24 +28,28 @@
 #include "log_uart.h"
 #include "cmd_keys.h"
 #include "cmd_serial.h"
+#include "tb6612.h"
+#include "chassis_tb6612.h"
 
 /* --- App 模式 --- */
 #include "mode_imu_test.h"
+#include "mode_speed.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
 /* --- 全局接口指针 (依赖注入) --- */
-IMU     *g_imu  = &g_imu_mpu6050;
-Display *g_disp = &g_disp_oled;
-Logger  *g_log  = &g_log_uart;
+IMU      *g_imu     = &g_imu_mpu6050;
+Display  *g_disp    = &g_disp_oled;
+Logger   *g_log     = &g_log_uart;
+Chassis  *g_chassis = &g_chassis_tb6612;
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 --- */
-static const AppMode *g_modes[] = { &mode_imu_test };
-#define MODE_COUNT 1
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_speed };
+#define MODE_COUNT 2
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
@@ -61,7 +66,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     if (tick_1ms >= 10)
     {
         tick_1ms = 0;
+        TB6612_UpdateSpeed();                    /* 编码器→速度 */
         g_modes[g_cur_mode]->on_isr();
+        ChassisTB_Update(g_chassis);             /* PID→PWM */
     }
 }
 
@@ -95,6 +102,8 @@ int main(void)
   }
   MPU6050_CalibrateGyro(&hi2c2, 500);
   HAL_Delay(999);
+  TB6612_Init();
+  TB6612_ResetEncoder();
   CmdSerial_Init();
   HAL_TIM_Base_Start_IT(&htim6);
 
