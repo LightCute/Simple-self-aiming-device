@@ -93,6 +93,7 @@ int main(void)
   g_imu->calibrate(500);
   HAL_Delay(999);
   g_chassis->init();
+  setvbuf(stdout, NULL, _IONBF, 0);  /* printf无缓冲, 实时输出 */
   CmdSerial_Init();
   HAL_TIM_Base_Start_IT(&htim6);
 
