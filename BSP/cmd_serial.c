@@ -2,7 +2,7 @@
 #include "usart.h"
 #include <string.h>
 
-static volatile uint8_t g_rx_byte = 0;
+static uint8_t  g_rx_byte = 0;
 static volatile uint8_t g_rx_flag = 0;
 static uint8_t g_rx_buf[16];
 static uint8_t g_rx_idx = 0;
