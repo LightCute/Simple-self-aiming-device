@@ -42,7 +42,11 @@ static void tb_brake(void) { TB6612_Brake(); g_target_l = g_target_r = 0; }
 
 static void tb_get_encoders(int32_t *left, int32_t *right)
 {
-    TB6612_GetEncoder(left, right);
+    int32_t el, er;
+    TB6612_GetEncoder(&el, &er);
+    /* 映射: 前进0→65535, 后退65535→0 */
+    *left  = (el < 0) ? (int32_t)(65535 + el) : el;
+    *right = (er < 0) ? (int32_t)(65535 + er) : er;
 }
 
 static void tb_init(void) { TB6612_Init(); TB6612_ResetEncoder(); }
