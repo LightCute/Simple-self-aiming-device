@@ -73,6 +73,6 @@ void     TB6612_Car_UpdateSpeed(TB6612_Car_t *car);
 void     TB6612_Car_GetSpeed(TB6612_Car_t *car, int32_t *left, int32_t *right);
 
 /* Motor 接口实例 */
-extern const Motor g_motor_tb6612;
+extern Motor g_motor_tb6612;
 
 #endif

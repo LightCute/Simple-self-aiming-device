@@ -234,6 +234,8 @@ void TB6612_Car_GetSpeed(TB6612_Car_t *car, int32_t *left, int32_t *right)
 /* ==================== Motor 接口实现 ==================== */
 #include "HAL/motor.h"
 
+extern Motor g_motor_tb6612;   /* 前向声明, mot_upd_spd 中引用 */
+
 static void mot_init(void)       { TB6612_Init(); TB6612_ResetEncoder(); }
 static void mot_set_pwm(int16_t l, int16_t r) { TB6612_Run(l, r); }
 static void mot_stop(void)       { TB6612_Stop(); }
@@ -251,7 +253,7 @@ static void mot_upd_spd(void)
     g_motor_tb6612.speed_r = TB6612_GetRightSpeed();
 }
 
-const Motor g_motor_tb6612 = {
+Motor g_motor_tb6612 = {
     .init         = mot_init,
     .set_pwm      = mot_set_pwm,
     .stop         = mot_stop,

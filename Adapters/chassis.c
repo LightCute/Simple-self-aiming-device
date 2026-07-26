@@ -3,7 +3,7 @@
 #include "Middleware/speed_ctrl.h"
 #include "BSP/tb6612.h"   /* for g_motor_tb6612 */
 
-static const Motor *g_motor = &g_motor_tb6612;
+static Motor *g_motor = &g_motor_tb6612;
 static SpeedCtrl    g_spd;
 
 /* ==== 接口实现 ==== */
