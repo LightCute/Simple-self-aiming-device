@@ -45,8 +45,16 @@ static void tb_get_encoders(int32_t *left, int32_t *right)
     int32_t el, er;
     TB6612_GetEncoder(&el, &er);
     /* 映射: 前进0→65535, 后退65535→0 */
-    *left  = (el < 0) ? (int32_t)(65535 + el) : el;
-    *right = (er < 0) ? (int32_t)(65535 + er) : er;
+    // *left  = (el < 0) ? (int32_t)(65535 + el) : el;
+    // *right = (er < 0) ? (int32_t)(65535 + er) : er;
+    *left  = el;
+    *right = er;
+    if(el < -23768) { //可认定为小车是前进的
+        *left = el + 65535;
+    }
+    if(er < -23768) { //可认定为小车是前进的
+        *right = er  + 65535;
+    }
 }
 
 static void tb_init(void) { TB6612_Init(); TB6612_ResetEncoder(); }
