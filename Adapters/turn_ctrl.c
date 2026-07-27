@@ -32,6 +32,7 @@ static void tc_spot(void *self, float delta) {
     g_base_spd  = 0;              /* 基速=0 = 原地转 */
     AnglePID_Init(&g_angle_pid);
     g_state = TURN_RUNNING;
+    g_turn_ctrl_inst.state = TURN_RUNNING;
 }
 
 static void tc_arc(void *self, float delta, int16_t base_spd) {
@@ -41,6 +42,7 @@ static void tc_arc(void *self, float delta, int16_t base_spd) {
     g_base_spd  = base_spd;       /* 弧线基速 */
     AnglePID_Init(&g_angle_pid);
     g_state = TURN_RUNNING;
+    g_turn_ctrl_inst.state = TURN_RUNNING;
 }
 
 static void tc_update(void *self) {
@@ -57,6 +59,7 @@ static void tc_update(void *self) {
     /* 到位判定 */
     if (g_angle_pid.done) {
         g_state = TURN_DONE;
+        g_turn_ctrl_inst.state = TURN_DONE;
         g_chassis->stop();
         return;
     }
