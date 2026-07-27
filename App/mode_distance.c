@@ -3,15 +3,17 @@
 #include "HAL/display.h"
 #include "HAL/logger.h"
 #include "HAL/command.h"
+#include "Adapters/cmd_serial.h"
 #include <stdio.h>
+#include <string.h>
 
 extern Chassis *g_chassis;
 extern Display *g_disp;
 extern Logger  *g_log;
 
-static int32_t g_target   = 500;   /* 目标编码脉冲, +/-调方向 */
-static int32_t g_start_enc = 0;    /* 起点编码值 */
-static int32_t g_cur_enc   = 0;    /* 当前编码值 */
+static int32_t g_target   = 500;
+static int32_t g_start_enc = 0;
+static int32_t g_cur_enc   = 0;
 static uint8_t g_run       = 0;
 
 static void dist_enter(void) {
@@ -69,7 +71,7 @@ static void dist_cmd(Command cmd, char data) {
             g_chassis->get_encoders(&el, &er);
             g_start_enc = (el + er) / 2;
             int16_t spd = (g_target > 0) ? (int16_t)20 : (int16_t)-20;
-            g_chassis->set_speeds(spd, spd);  /* 仅启动时设一次, PID维持 */
+            g_chassis->set_speeds(spd, spd);
         } else {
             g_chassis->stop();
         }
@@ -80,6 +82,24 @@ static void dist_cmd(Command cmd, char data) {
     case CMD_DOWN:
         if (g_target > -10000) g_target -= 100;
         break;
+    case CMD_CUSTOM: {
+        const char *s = CmdSerial_GetString();
+        int v;
+        if (sscanf(s, "dist:%d", &v) == 1) {
+            g_target = v;
+            g_log->info("DIST target=%d", v);
+        }
+        else if (strcmp(s, "go") == 0 && !g_run) {
+            g_run = 1;
+            int32_t el, er;
+            g_chassis->get_encoders(&el, &er);
+            g_start_enc = (el + er) / 2;
+            int16_t spd = (g_target > 0) ? (int16_t)20 : (int16_t)-20;
+            g_chassis->set_speeds(spd, spd);
+            g_log->info("DIST go target=%d", (int)g_target);
+        }
+        break;
+    }
     default: break;
     }
 }
