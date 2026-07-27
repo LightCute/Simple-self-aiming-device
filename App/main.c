@@ -37,6 +37,7 @@
 
 /* --- App 模式 --- */
 #include "mode_lap_run.h"
+#include "mode_gimbal_test.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,16 +66,13 @@ Chassis  *g_chassis = &g_chassis_inst;
 Tracker  *g_tracker = &g_tracker_inst;
 TurnCtrl *g_turn    = &g_turn_ctrl_inst;
 
-/* --- 云台 UART4 DMA RX 监听缓冲区 --- */
-static uint8_t g_gimbal_rx_buf[32];
-
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_lap_run };
-#define MODE_COUNT 1
+static const AppMode *g_modes[] = { &mode_gimbal_test, &mode_lap_run };
+#define MODE_COUNT 2
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
@@ -154,10 +152,6 @@ int main(void)
   g_turn->init(g_turn);
   setvbuf(stdout, NULL, _IONBF, 0);  /* printf无缓冲, 实时输出 */
   CmdSerial_Init();
-
-  /* --- 云台 UART4 DMA RX 监听: 上电看云台发什么 --- */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart4, g_gimbal_rx_buf, sizeof(g_gimbal_rx_buf));
-
   HAL_TIM_Base_Start_IT(&htim6);
 
   g_modes[g_cur_mode]->on_enter();
@@ -262,33 +256,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/* ================================================================ */
-/*  F32C 协议层桩函数 — Step1 只监听不发, 占位满足链接器               */
-/* ================================================================ */
-void f32c_uart_send(uint8_t *data, uint8_t len)
-{
-    (void)data; (void)len;  /* not used yet */
-}
-
-/* ================================================================ */
-/*  UART4 DMA RX 回调 — 纯监听, hex dump 云台发来的所有数据         */
-/* ================================================================ */
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
-{
-    if (huart->Instance != UART4) return;
-
-    /* 原始 hex dump */
-    printf("[GIMBAL RX] len=%d:", (int)Size);
-    for (uint16_t i = 0; i < Size && i < 32; i++) {
-        printf(" %02X", g_gimbal_rx_buf[i]);
-    }
-    printf("\r\n");
-    fflush(stdout);
-
-    /* 重新启动 DMA RX 等待下一帧 */
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart4, g_gimbal_rx_buf, sizeof(g_gimbal_rx_buf));
-}
 
 /* USER CODE END 4 */
 
