@@ -15,9 +15,20 @@ static TrackEvent lt_update(void *self) {
     g_tracker_inst.offset     = g_tracking_offset;
     g_tracker_inst.correction = LinePID_Update(&g_line_pid, g_tracking_offset);
 
+    /* 连续帧防抖: 同方向连续3帧才确认 */
+    static uint8_t  debounce_cnt = 0;
+    static uint8_t  last_sharp   = 0;
     uint8_t sharp = Tracking_IsSharpTurn();
-    if (sharp == 1) return TRACK_LEFT;
-    if (sharp == 2) return TRACK_RIGHT;
+
+    if (sharp == last_sharp && sharp != 0) {
+        if (++debounce_cnt >= 3) {
+            debounce_cnt = 0;
+            return (sharp == 1) ? TRACK_LEFT : TRACK_RIGHT;
+        }
+    } else {
+        debounce_cnt = (sharp != 0) ? 1 : 0;
+        last_sharp   = sharp;
+    }
     return TRACK_OK;
 }
 
