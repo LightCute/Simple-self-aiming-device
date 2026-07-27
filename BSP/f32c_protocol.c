@@ -79,7 +79,9 @@ f32c_feedback_t f32c_parse_feedback(uint8_t *buf, uint8_t len)
     fb.valid    = 1;
     fb.motor_id = buf[1];
     fb.type     = buf[2];
-    fb.value    = (int32_t)((buf[3] << 24) | (buf[4] << 16) |
-                            (buf[5] << 8)  |  buf[6]);
+    fb.value    = (int32_t)(((uint32_t)buf[3] << 24) |
+                            ((uint32_t)buf[4] << 16) |
+                            ((uint32_t)buf[5] << 8)  |
+                             (uint32_t)buf[6]);
     return fb;
 }

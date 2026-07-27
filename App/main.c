@@ -34,7 +34,6 @@
 #include "Adapters/chassis.h"
 #include "Adapters/line_track.h"
 #include "Adapters/turn_ctrl.h"
-#include "BSP/gimbal_driver.h"
 
 /* --- App 模式 --- */
 #include "mode_lap_run.h"

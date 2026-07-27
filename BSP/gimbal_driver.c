@@ -92,8 +92,10 @@ void gimbal_on_rx_event(uint16_t len)
 
     g_rx_count++;
     {
-        int32_t val = (int32_t)((dma_rx_buf[3] << 24) | (dma_rx_buf[4] << 16) |
-                                (dma_rx_buf[5] << 8)  |  dma_rx_buf[6]);
+        int32_t val = (int32_t)(((uint32_t)dma_rx_buf[3] << 24) |
+                                ((uint32_t)dma_rx_buf[4] << 16) |
+                                ((uint32_t)dma_rx_buf[5] << 8)  |
+                                 (uint32_t)dma_rx_buf[6]);
         uint8_t id = dma_rx_buf[1];
         if      (id == F32C_MOTOR_X) g_current[0] = val;
         else if (id == F32C_MOTOR_Y) g_current[1] = val;
@@ -112,7 +114,7 @@ void gimbal_init(UART_HandleTypeDef *huart)
 {
     g_huart = huart;
 
-    HAL_Delay(1500);                        /* 1. wait for motor boot */
+    //HAL_Delay(500);                        /* 1. wait for motor boot */
 
     f32c_enable(F32C_MOTOR_X);              /* 2. enable both motors */
     HAL_Delay(1);
