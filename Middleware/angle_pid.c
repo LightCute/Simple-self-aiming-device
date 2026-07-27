@@ -1,8 +1,10 @@
 #include "angle_pid.h"
 
+float g_angle_turn_tolerance = 12.0f;  /* 转弯到位容限(度), Keil可改 */
+
 void AnglePID_Init(AnglePID *p)
 {
-    p->Kp = 1.0f; p->Ki = 0.05f; p->Kd = 5.0f;
+    p->Kp = 0.05f; p->Ki = 0.05f; p->Kd = 0.1f;
     p->integral = 0; p->prev_error = 0;
     p->integral_max = 200; p->output_max = 300;
     p->correction = 0; p->angle_err = 0; p->done = 0;
@@ -28,6 +30,6 @@ float AnglePID_Update(AnglePID *p, float err)
     if (out < -p->output_max) out = -p->output_max;
 
     p->correction = out;
-    p->done = (abs_err < 12.0f);  /* 误差<12° = 到位 */
+    p->done = (abs_err < g_angle_turn_tolerance);
     return out;
 }

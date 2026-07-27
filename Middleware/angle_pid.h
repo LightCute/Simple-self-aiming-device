@@ -2,6 +2,8 @@
 #define MID_ANGLE_PID_H
 #include <stdint.h>
 
+extern float g_angle_turn_tolerance;   /* 转弯到位容限(度), debug可改 */
+
 typedef struct {
     float Kp, Ki, Kd;
     float integral, prev_error;

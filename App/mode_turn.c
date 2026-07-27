@@ -6,6 +6,7 @@
 #include "HAL/logger.h"
 #include "HAL/command.h"
 #include "Adapters/cmd_serial.h"
+#include "Middleware/angle_pid.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -43,8 +44,8 @@ static void trn_ui(void) {
     sprintf(buf, "Z:%.1f", (double)g_imu->yaw);
     g_disp->show_str(0, 26, buf);
 
-    sprintf(buf, "Err:%.1f Corr:%.0f", (double)g_turn->angle_err,
-            (double)g_turn->correction);
+    sprintf(buf, "Err:%.1f Tol:%.0f", (double)g_turn->angle_err,
+            (double)g_angle_turn_tolerance);
     g_disp->show_str(0, 38, buf);
 
     sprintf(buf, "Spd L:%d R:%d", g_chassis->actual_l, g_chassis->actual_r);
@@ -57,9 +58,9 @@ static void trn_cmd(Command cmd, char data) {
     if (cmd == CMD_TOGGLE) {
         /* KEY4: 原地转, 方向交替 */
         static int8_t dir = 1;
-        g_turn->arc(g_turn, g_angle * dir, g_base_spd);
+        g_turn->spot(g_turn, g_angle * dir);
         dir = -dir;
-        g_log->info("Turn arc %.0f spd=%d", (double)(g_angle * (dir < 0 ? 1 : -1)), (int)g_base_spd);
+        g_log->info("Turn spot %.0f", (double)(g_angle * (dir < 0 ? 1 : -1)));
         return;
     }
 
