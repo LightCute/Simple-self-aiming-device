@@ -17,39 +17,11 @@ static uint8_t  g_frame_idx;
 static uint8_t  g_in_frame;
 
 /* ---- OLED 缓存 ---- */
-static uint8_t  g_disp_tx[32];
-static uint8_t  g_disp_tx_len;
 static uint8_t  g_disp_rx[32];
 static uint8_t  g_disp_rx_len;
 static uint16_t g_disp_rx_total;
 
-/* ================================================================ */
-/*  Helpers                                                          */
-/* ================================================================ */
-static int hex_nibble(char c)
-{
-    if (c >= '0' && c <= '9') return c - '0';
-    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
-    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return -1;
-}
-
-static int hex_to_bytes(const char *s, uint8_t *out, int max_len)
-{
-    int len = 0;
-    while (*s && len < max_len) {
-        while (*s == ' ' || *s == '\t') s++;
-        if (!*s) break;
-        int hi = hex_nibble(*s++);
-        while (*s == ' ' || *s == '\t') s++;
-        int lo = hex_nibble(*s++);
-        if (hi < 0 || lo < 0) return -1;
-        out[len++] = (uint8_t)((hi << 4) | lo);
-    }
-    return len;
-}
-
-/* ---- 收到完整帧时调用 ---- */
+/* ---- 收到完整 F32C 帧时调用 ---- */
 static void on_frame_received(uint8_t len)
 {
     g_disp_rx_total++;
@@ -75,7 +47,6 @@ static void gimbal_enter(void)
     g_in_frame  = 0;
     g_frame_idx = 0;
     g_disp_rx_total = 0;
-    g_disp_tx_len   = 0;
     g_disp_rx_len   = 0;
 
     /* 启动 UART4 单字节中断接收 */
@@ -90,17 +61,7 @@ static void gimbal_ui(void)
 {
     char buf[32];
     g_disp->clear();
-    g_disp->show_str(0,  0, "GIMBAL TEST");
-
-    if (g_disp_tx_len) {
-        int pos = 0;
-        for (int i = 0; i < g_disp_tx_len && pos < 30; i++)
-            pos += sprintf(buf + pos, "%02X", g_disp_tx[i]);
-        buf[pos] = '\0';
-    } else {
-        sprintf(buf, "TX: --");
-    }
-    g_disp->show_str(0, 16, buf);
+    g_disp->show_str(0,  0, "GIMBAL UART8->4");
 
     if (g_disp_rx_len) {
         int pos = 0;
@@ -110,40 +71,19 @@ static void gimbal_ui(void)
     } else {
         sprintf(buf, "RX: --");
     }
-    g_disp->show_str(0, 34, buf);
+    g_disp->show_str(0, 20, buf);
 
     sprintf(buf, "RX frames:%d", (int)g_disp_rx_total);
-    g_disp->show_str(0, 52, buf);
+    g_disp->show_str(0, 40, buf);
     g_disp->flush();
 }
 
 static void gimbal_cmd(Command cmd, char data)
 {
     (void)data;
-    if (cmd != CMD_CUSTOM) return;
-
-    const char *str = CmdSerial_GetString();
-    uint8_t buf[64];
-    int len = hex_to_bytes(str, buf, sizeof(buf));
-
-    if (len <= 0) {
-        g_log->info("[GIMBAL] bad hex: \"%s\"", str);
-        return;
-    }
-
-    if (HAL_UART_Transmit(&huart4, buf, (uint16_t)len, 100) != HAL_OK) {
-        g_log->info("[GIMBAL] TX FAIL");
-        return;
-    }
-
-    memcpy(g_disp_tx, buf, len < 32 ? len : 32);
-    g_disp_tx_len = (uint8_t)(len < 32 ? len : 32);
-
-    char hex[96] = {0};
-    int pos = 0;
-    for (int i = 0; i < len && pos < 90; i++)
-        pos += sprintf(hex + pos, " %02X", buf[i]);
-    g_log->data("[GIMBAL TX] len=%d:%s", len, hex);
+    /* 命令系统保留 (n=切换模式, +/-=参数等), CMD_CUSTOM 不处理
+       因为 UART8 每个字节已在 HAL_UART_RxCpltCallback 中原样转发到 UART4 */
+    if (cmd == CMD_CUSTOM) return;
 }
 
 const AppMode mode_gimbal_test = {
@@ -171,6 +111,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     uint8_t b = *(uint8_t *)huart->pRxBuffPtr;
 
     if (huart->Instance == UART4) {
+        HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
         if (b == 0x7A) {
             g_in_frame  = 1;
             g_frame_idx = 0;
@@ -189,8 +130,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (huart->Instance == UART8) {
         HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+
+        /* 原封不动转发到 UART4 (云台) */
+        HAL_UART_Transmit(&huart4, &b, 1, 10);
+
         CmdSerial_FeedByte(b);
-        /* 重新使能中断, 沿用 CmdSerial_Init 设置的缓冲区指针 */
         HAL_UART_Receive_IT(&huart8, (uint8_t *)huart->pRxBuffPtr, 1);
         return;
     }
