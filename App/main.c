@@ -29,10 +29,12 @@
 #include "Adapters/cmd_keys.h"
 #include "Adapters/cmd_serial.h"
 #include "Adapters/chassis.h"
+#include "Adapters/line_track.h"
 
 /* --- App 模式 --- */
 #include "mode_imu_test.h"
 #include "mode_chassis_test.h"
+#include "mode_track.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -40,15 +42,16 @@
 IMU      *g_imu     = &g_imu_mpu6050;
 Display  *g_disp    = &g_disp_oled;
 Logger   *g_log     = &g_log_uart;
-Chassis  *g_chassis = &g_chassis_inst;   /* chassis.c 的全局实例 */
+Chassis  *g_chassis = &g_chassis_inst;
+Tracker  *g_tracker = &g_tracker_inst;
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test };
-#define MODE_COUNT 2
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track };
+#define MODE_COUNT 3
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
