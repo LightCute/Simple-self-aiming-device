@@ -21,7 +21,7 @@ static uint8_t g_lap_count  = 0;
 static uint8_t g_corner_cnt = 0;
 
 static uint8_t g_corner_dir = 0;
-static int16_t g_straight_dist = 200;
+static int16_t g_straight_dist = 300;
 static uint8_t g_grace = 0;
 
 static const char *state_name(void) {
@@ -107,6 +107,7 @@ static void lap_isr(void) {
                 g_grace = 30;
                 g_tracker->init(g_tracker);
                 g_st = S_LINE;
+                g_log->info("Resume LINE, grace=%d", g_grace);
             }
         }
         break;
