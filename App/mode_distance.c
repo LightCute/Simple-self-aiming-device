@@ -35,9 +35,6 @@ static void dist_isr(void) {
         g_chassis->stop();
         g_run = 0;
         g_log->info("DIST done: %d", (int)traveled);
-    } else {
-        int16_t spd = (g_target > 0) ? (int16_t)20 : (int16_t)-20;
-        g_chassis->set_speeds(spd, spd);
     }
 }
 
@@ -70,7 +67,9 @@ static void dist_cmd(Command cmd, char data) {
         if (g_run) {
             int32_t el, er;
             g_chassis->get_encoders(&el, &er);
-            g_start_enc = (el + er) / 2;   /* 快照起点 */
+            g_start_enc = (el + er) / 2;
+            int16_t spd = (g_target > 0) ? (int16_t)20 : (int16_t)-20;
+            g_chassis->set_speeds(spd, spd);  /* 仅启动时设一次, PID维持 */
         } else {
             g_chassis->stop();
         }
