@@ -264,6 +264,14 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /* ================================================================ */
+/*  F32C 协议层桩函数 — Step1 只监听不发, 占位满足链接器               */
+/* ================================================================ */
+void f32c_uart_send(uint8_t *data, uint8_t len)
+{
+    (void)data; (void)len;  /* not used yet */
+}
+
+/* ================================================================ */
 /*  UART4 DMA RX 回调 — 纯监听, hex dump 云台发来的所有数据         */
 /* ================================================================ */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
