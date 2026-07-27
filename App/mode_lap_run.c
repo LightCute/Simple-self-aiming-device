@@ -113,7 +113,7 @@ static void lap_isr(void) {
                 g_st = S_DONE;
                 g_log->info("ALL LAPS DONE!");
             } else {
-                g_grace = 30;
+                g_grace = 100;   /* 1秒保护, 足够离开弯道 */
                 g_tracker->init(g_tracker);
                 g_st = S_LINE;
                 g_log->info("Resume LINE, grace=%d", g_grace);
