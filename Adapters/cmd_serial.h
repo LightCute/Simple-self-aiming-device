@@ -1,5 +1,6 @@
 #ifndef BSP_CMD_SERIAL_H
 #define BSP_CMD_SERIAL_H
+#include <stdint.h>
 #include "HAL/command.h"
 
 extern CommandSource g_src_serial;
