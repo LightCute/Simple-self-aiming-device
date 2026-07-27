@@ -40,6 +40,7 @@
 #include "mode_sensor_test.h"
 #include "mode_track.h"
 #include "mode_turn.h"
+#include "mode_distance.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,8 +74,8 @@ static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test, &mode_turn };
-#define MODE_COUNT 5
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test, &mode_turn, &mode_distance };
+#define MODE_COUNT 6
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
