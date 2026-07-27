@@ -24,7 +24,6 @@ static uint8_t g_corner_cnt = 0;
 
 static uint8_t g_corner_dir = 0;
 static int16_t g_straight_dist = 300;
-static uint8_t g_grace = 0;
 
 static const char *state_name(void) {
     switch(g_st) {
@@ -48,8 +47,7 @@ static void lap_isr(void) {
         break;
 
     case S_LINE: {
-        if (g_grace > 0) g_grace--;
-        TrackEvent ev = (g_grace > 0) ? TRACK_OK : g_tracker->update(g_tracker);
+        TrackEvent ev = g_tracker->update(g_tracker);
 
         if (ev == TRACK_OK) {
             int16_t base = g_tracker->base_speed;
@@ -115,10 +113,9 @@ static void lap_isr(void) {
                 g_st = S_DONE;
                 g_log->info("ALL LAPS DONE!");
             } else {
-                g_grace = 100;   /* 1秒保护, 足够离开弯道 */
                 g_tracker->init(g_tracker);
                 g_st = S_LINE;
-                g_log->info("Resume LINE, grace=%d", g_grace);
+                g_log->info("Resume LINE");
             }
         }
         break;
@@ -145,7 +142,7 @@ static void lap_cmd(Command cmd, char data) {
     switch (cmd) {
     case CMD_TOGGLE:
         if (g_st == S_IDLE || g_st == S_DONE) {
-            g_lap_count = 0; g_corner_cnt = 0; g_grace = 0;
+            g_lap_count = 0; g_corner_cnt = 0;
             g_tracker->init(g_tracker);
             g_st = S_LINE;
             g_log->info("LAP start, target=%d laps", g_lap_target);
