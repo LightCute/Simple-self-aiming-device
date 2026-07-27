@@ -11,6 +11,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "dma.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -63,6 +64,9 @@ Logger   *g_log     = &g_log_uart;
 Chassis  *g_chassis = &g_chassis_inst;
 Tracker  *g_tracker = &g_tracker_inst;
 TurnCtrl *g_turn    = &g_turn_ctrl_inst;
+
+/* --- 云台 UART4 DMA RX 监听缓冲区 --- */
+static uint8_t g_gimbal_rx_buf[32];
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
@@ -135,7 +139,9 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_TIM6_Init();
+  MX_UART4_Init();
   MX_UART8_Init();
+  MX_DMA_Init();
   /* USER CODE BEGIN 2 */
   g_disp->init();
   while (g_imu->init()) {
@@ -148,6 +154,10 @@ int main(void)
   g_turn->init(g_turn);
   setvbuf(stdout, NULL, _IONBF, 0);  /* printf无缓冲, 实时输出 */
   CmdSerial_Init();
+
+  /* --- 云台 UART4 DMA RX 监听: 上电看云台发什么 --- */
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart4, g_gimbal_rx_buf, sizeof(g_gimbal_rx_buf));
+
   HAL_TIM_Base_Start_IT(&htim6);
 
   g_modes[g_cur_mode]->on_enter();
@@ -252,6 +262,25 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* ================================================================ */
+/*  UART4 DMA RX 回调 — 纯监听, hex dump 云台发来的所有数据         */
+/* ================================================================ */
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+    if (huart->Instance != UART4) return;
+
+    /* 原始 hex dump */
+    printf("[GIMBAL RX] len=%d:", (int)Size);
+    for (uint16_t i = 0; i < Size && i < 32; i++) {
+        printf(" %02X", g_gimbal_rx_buf[i]);
+    }
+    printf("\r\n");
+    fflush(stdout);
+
+    /* 重新启动 DMA RX 等待下一帧 */
+    HAL_UARTEx_ReceiveToIdle_DMA(&huart4, g_gimbal_rx_buf, sizeof(g_gimbal_rx_buf));
+}
 
 /* USER CODE END 4 */
 

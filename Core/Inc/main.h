@@ -75,6 +75,8 @@ void Error_Handler(void);
 #define LE1A_GPIO_Port GPIOA
 #define LE2B_Pin GPIO_PIN_1
 #define LE2B_GPIO_Port GPIOA
+#define PWM_EN_Pin GPIO_PIN_4
+#define PWM_EN_GPIO_Port GPIOA
 #define RE1A_Pin GPIO_PIN_6
 #define RE1A_GPIO_Port GPIOA
 #define RE2B_Pin GPIO_PIN_7
