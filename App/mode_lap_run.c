@@ -1,4 +1,5 @@
 #include "mode_lap_run.h"
+#include "HAL/imu.h"
 #include "HAL/tracker.h"
 #include "HAL/turn.h"
 #include "HAL/chassis.h"
@@ -7,6 +8,7 @@
 #include "HAL/command.h"
 #include <stdio.h>
 
+extern IMU      *g_imu;
 extern Tracker  *g_tracker;
 extern TurnCtrl *g_turn;
 extern Chassis  *g_chassis;
