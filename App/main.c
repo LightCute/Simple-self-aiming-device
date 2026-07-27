@@ -34,6 +34,7 @@
 /* --- App 模式 --- */
 #include "mode_imu_test.h"
 #include "mode_chassis_test.h"
+#include "mode_sensor_test.h"
 #include "mode_track.h"
 /* USER CODE END Includes */
 
@@ -50,8 +51,8 @@ static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track };
-#define MODE_COUNT 3
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test };
+#define MODE_COUNT 4
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
