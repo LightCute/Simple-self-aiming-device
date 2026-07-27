@@ -12,6 +12,7 @@ static void lt_init(void *self) {
 static TrackEvent lt_update(void *self) {
     (void)self;
     Tracking_UpdateOffset();
+    g_tracker_inst.offset     = g_tracking_offset;
     g_tracker_inst.correction = LinePID_Update(&g_line_pid, g_tracking_offset);
 
     uint8_t sharp = Tracking_IsSharpTurn();

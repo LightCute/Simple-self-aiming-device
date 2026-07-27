@@ -44,7 +44,7 @@ static void trk_ui(void) {
     g_disp->show_str(0, 0, "TRACK");
     g_disp->show_str(50, 0, g_run ? "RUN" : "STOP");
 
-    sprintf(buf, "Off:%d", (int)g_tracking_offset);
+    sprintf(buf, "Off:%d", (int)g_tracker->offset);
     g_disp->show_str(0, 14, buf);
 
     sprintf(buf, "Corr:%.0f", (double)g_tracker->correction);
