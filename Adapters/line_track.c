@@ -2,6 +2,8 @@
 #include "tracking.h"
 #include "Middleware/line_pid.h"
 
+uint8_t g_debounce_frames = 30;  /* 路口防抖帧数, Keil在线可调 */
+
 static LinePID g_line_pid;
 
 static void lt_init(void *self) {
@@ -15,13 +17,13 @@ static TrackEvent lt_update(void *self) {
     g_tracker_inst.offset     = g_tracking_offset;
     g_tracker_inst.correction = LinePID_Update(&g_line_pid, g_tracking_offset);
 
-    /* 连续帧防抖: 同方向连续3帧才确认 */
+    /* 连续帧防抖: 同方向连续N帧才确认 */
     static uint8_t  debounce_cnt = 0;
     static uint8_t  last_sharp   = 0;
     uint8_t sharp = Tracking_IsSharpTurn();
 
     if (sharp == last_sharp && sharp != 0) {
-        if (++debounce_cnt >= 3) {
+        if (++debounce_cnt >= g_debounce_frames) {
             debounce_cnt = 0;
             return (sharp == 1) ? TRACK_LEFT : TRACK_RIGHT;
         }
