@@ -24,8 +24,16 @@ static void trn_enter(void) {
     g_log->info("Enter TURN mode");
 }
 
+static TurnState g_prev_st = TURN_IDLE;
+
 static void trn_isr(void) {
     g_turn->update(g_turn);
+    if (g_turn->state != g_prev_st) {
+        const char *name = (g_turn->state==TURN_IDLE)?"IDLE":
+                           (g_turn->state==TURN_RUNNING)?"RUN":"DONE";
+        g_log->info("TURN state: %s", name);
+        g_prev_st = g_turn->state;
+    }
 }
 
 static void trn_ui(void) {
