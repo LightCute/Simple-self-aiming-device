@@ -86,7 +86,7 @@ static void gmt_cmd(Command cmd, char data)
 
         /* ---- V <rpm> set speed ---- */
         int ival;
-        if (sscanf(s, "V %d", &ival) == 1 || sscanf(s, "v %d", &ival) == 1) {
+        if (sscanf(s, "V%*[ :]%d", &ival) == 1 || sscanf(s, "v%*[ :]%d", &ival) == 1) {
             if (ival > 0) {
                 gimbal_set_speed((int16_t)ival);
                 g_log->info("GIMBAL speed=%d", ival);
@@ -94,10 +94,10 @@ static void gmt_cmd(Command cmd, char data)
             return;
         }
 
-        /* ---- XY <x> <y> set both axes ---- */
+        /* ---- XY <x> <y> set both axes (supports XY:200:0) ---- */
         int v1, v2;
-        if (sscanf(s, "XY %d %d", &v1, &v2) == 2 ||
-            sscanf(s, "xy %d %d", &v1, &v2) == 2) {
+        if (sscanf(s, "XY%*[ :]%d%*[ :]%d", &v1, &v2) == 2 ||
+            sscanf(s, "xy%*[ :]%d%*[ :]%d", &v1, &v2) == 2) {
             gimbal_set_angle(GIMBAL_AXIS_X, v1);
             gimbal_set_angle(GIMBAL_AXIS_Y, v2);
             g_log->info("GIMBAL XY=%d,%d", v1, v2);
@@ -105,7 +105,8 @@ static void gmt_cmd(Command cmd, char data)
         }
 
         /* ---- X <pos> set X axis (pos in deci-degrees: 200 = 20.0°) ---- */
-        if (sscanf(s, "X %d", &ival) == 1 || sscanf(s, "x %d", &ival) == 1) {
+        /* supports both "X 200" and "X:200" */
+        if (sscanf(s, "X%*[ :]%d", &ival) == 1 || sscanf(s, "x%*[ :]%d", &ival) == 1) {
             gimbal_set_angle(GIMBAL_AXIS_X, ival);
             g_log->info("GIMBAL X=%d cur=%ld", ival,
                         (long)gimbal_get_current(GIMBAL_AXIS_X));
@@ -113,15 +114,15 @@ static void gmt_cmd(Command cmd, char data)
         }
 
         /* ---- Y <pos> set Y axis ---- */
-        if (sscanf(s, "Y %d", &ival) == 1 || sscanf(s, "y %d", &ival) == 1) {
+        if (sscanf(s, "Y%*[ :]%d", &ival) == 1 || sscanf(s, "y%*[ :]%d", &ival) == 1) {
             gimbal_set_angle(GIMBAL_AXIS_Y, ival);
             g_log->info("GIMBAL Y=%d cur=%ld", ival,
                         (long)gimbal_get_current(GIMBAL_AXIS_Y));
             return;
         }
 
-        /* ---- DX <delta> relative move X ---- */
-        if (sscanf(s, "DX %d", &ival) == 1 || sscanf(s, "dx %d", &ival) == 1) {
+        /* ---- DX <delta> relative move X (supports DX:50) ---- */
+        if (sscanf(s, "DX%*[ :]%d", &ival) == 1 || sscanf(s, "dx%*[ :]%d", &ival) == 1) {
             gimbal_move_delta(GIMBAL_AXIS_X, ival);
             g_log->info("GIMBAL DX=%d tgt=%ld", ival,
                         (long)gimbal_get_target(GIMBAL_AXIS_X));
@@ -129,7 +130,7 @@ static void gmt_cmd(Command cmd, char data)
         }
 
         /* ---- DY <delta> relative move Y ---- */
-        if (sscanf(s, "DY %d", &ival) == 1 || sscanf(s, "dy %d", &ival) == 1) {
+        if (sscanf(s, "DY%*[ :]%d", &ival) == 1 || sscanf(s, "dy%*[ :]%d", &ival) == 1) {
             gimbal_move_delta(GIMBAL_AXIS_Y, ival);
             g_log->info("GIMBAL DY=%d tgt=%ld", ival,
                         (long)gimbal_get_target(GIMBAL_AXIS_Y));
