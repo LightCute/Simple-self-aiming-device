@@ -57,9 +57,9 @@ static void trn_cmd(Command cmd, char data) {
     if (cmd == CMD_TOGGLE) {
         /* KEY4: 原地转, 方向交替 */
         static int8_t dir = 1;
-        g_turn->spot(g_turn, g_angle * dir);
+        g_turn->arc(g_turn, g_angle * dir, g_base_spd);
         dir = -dir;
-        g_log->info("Turn spot %.0f", (double)(g_angle * (dir < 0 ? 1 : -1)));
+        g_log->info("Turn arc %.0f spd=%d", (double)(g_angle * (dir < 0 ? 1 : -1)), (int)g_base_spd);
         return;
     }
 
