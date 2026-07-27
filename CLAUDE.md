@@ -141,3 +141,5 @@ ki:1.7                在线改 Ki
 - MDK-ARM 编译产物在 `MDK-ARM/MPU6050H7/`, **不提交 git**
 - printf 通过 `fputc` 重定向到 UART8, 已设 `setvbuf(stdout, NULL, _IONBF, 0)` 无缓冲
 - Keil 需添加 include paths: `..\HAL`, `..\BSP`, `..\Adapters`, `..\Middleware`, `..\App`
+- **入口文件**: `App/main.c` (CubeMX 生成的 `Core/Src/main.c` 不编译, 仅保留作为 CubeMX 刷新参考)
+- CubeMX 重新生成后会覆盖 `Core/Src/main.c`, 不影响 `App/main.c`

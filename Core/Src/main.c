@@ -32,12 +32,14 @@
 #include "Adapters/cmd_serial.h"
 #include "Adapters/chassis.h"
 #include "Adapters/line_track.h"
+#include "Adapters/turn_ctrl.h"
 
 /* --- App 模式 --- */
 #include "mode_imu_test.h"
 #include "mode_chassis_test.h"
 #include "mode_sensor_test.h"
 #include "mode_track.h"
+#include "mode_turn.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,14 +66,15 @@ Display  *g_disp    = &g_disp_oled;
 Logger   *g_log     = &g_log_uart;
 Chassis  *g_chassis = &g_chassis_inst;
 Tracker  *g_tracker = &g_tracker_inst;
+TurnCtrl *g_turn    = &g_turn_ctrl_inst;
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test };
-#define MODE_COUNT 4
+static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test, &mode_turn };
+#define MODE_COUNT 5
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
@@ -146,6 +149,7 @@ int main(void)
   g_imu->calibrate(500);
   HAL_Delay(999);
   g_chassis->init();
+  g_turn->init(g_turn);
   setvbuf(stdout, NULL, _IONBF, 0);  /* printf无缓冲, 实时输出 */
   CmdSerial_Init();
   HAL_TIM_Base_Start_IT(&htim6);
