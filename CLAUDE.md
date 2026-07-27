@@ -6,14 +6,79 @@
 - **IDE**: MDK-ARM (Keil), 由 STM32CubeMX 生成初始代码
 - **用途**: TICup2026 竞赛巡线小车
 
-## 分支说明
+## 架构（重构v2，SOLID + 依赖注入）
 
-| 分支 | 用途 |
+```
+HAL/          纯抽象接口 (零实现, 零依赖)
+  imu.h       IMU 传感器接口
+  display.h   显示接口
+  logger.h    日志接口
+  command.h   命令枚举 + CommandSource 接口
+  app_mode.h  应用模式接口 (on_enter/on_isr/on_ui/on_command)
+  chassis.h   底盘接口 (set_speeds/stop/brake/get_encoders+PID参数)
+  motor.h     电机驱动接口 (set_pwm/update_speed)
+
+BSP/          裸驱动 (只操作寄存器, 换硬件只改这里)
+  mpu6050.c/h      MPU6050 I2C 驱动
+  oled.c/h         SSD1306 OLED 驱动
+  tb6612.c/h       TB6612 电机驱动 + Motor 接口实现
+  font.c/h         字库
+
+Adapters/     接口适配器 (实现 HAL 接口, 组合 BSP + Middleware)
+  imu_mpu6050.c/h  IMU ← MPU6050
+  disp_oled.c/h    Display ← OLED
+  log_uart.c/h     Logger ← UART printf
+  cmd_keys.c/h     CommandSource ← GPIO EXTI + 轮询
+  cmd_serial.c/h   CommandSource ← UART8 中断
+  chassis.c/h      Chassis ← Motor + SpeedCtrl + 16bit编码映射
+
+Middleware/   纯算法 (只依赖 HAL, 不碰硬件)
+  speed_ctrl.c/h   速度 PID
+
+App/          应用层 (模式 + 调度)
+  main.c            调度器 (依赖注入, 命令轮询, 模式切换)
+  mode_imu_test.c   模式: IMU 姿态角 OLED+串口
+  mode_chassis_test 模式: 底盘调试 (编码器/电机/PID调参)
+
+Core/         CubeMX 生成, 不动
+```
+
+## 设计原则
+
+| 原则 | 实现 |
 |------|------|
-| `main` | 主分支 |
-| `test1` | 原始完整版：巡线 → T路口检测 → 转弯入库 → 倒车停车（1.8-终版） |
-| `feature/line-tracking-only` | 简化版：纯巡线 + T路口停车，去掉入库逻辑 |
-| `feature/motor-test` | 电机测试：串口 CSV 输出，测试前进/后退/差速/制动 |
+| SRP 单一职责 | 每个模块一个职责 (传感器/显示/底盘/命令) |
+| OCP 开闭 | 加新模式 = 新建 mode_*.c + 注册到 g_modes[] |
+| LSP 里氏替换 | 所有模式/命令源/驱动实现相同接口 |
+| ISP 接口隔离 | AppMode 回调: on_enter/on_isr/on_ui/on_command |
+| DIP 依赖倒置 | main.c 只依赖 HAL 接口, 具体实现在 Adapters 注入 |
+
+## 模式系统
+
+```
+KEY3: 切换模式
+串口 n: 切换模式
+
+当前模式:
+  IMU      — 姿态角 Yaw/Pitch/Roll OLED 显示
+  CHASSIS  — 底盘调试: 串口命令控制
+
+加新模式:
+  1. App/mode_xxx.c 实现 AppMode 接口
+  2. main.c: g_modes[] 数组加一行
+  3. 完成, main.c 其他代码不动
+```
+
+## CHASSIS 模式串口命令
+
+```
+encoder:on/off        编码显示开关
+set_speed:L,R         左右设速 (正=前进, 负=后退)
+stop:on               惯性滑行 (IN1=0 IN2=0)
+brake:on              短接制动 (IN1=1 IN2=1)
+kp:85                 在线改 Kp
+ki:1.7                在线改 Ki
+```
 
 ## 硬件引脚
 
@@ -50,11 +115,10 @@
 |------|-----------|------|
 | MPU6050 | I2C2 | 6轴IMU，卡尔曼滤波 Z轴角度 |
 | OLED | I2C1 (0x78) | SSD1306 128×64 |
-| 侧方传感器 | PD6 (SensorL), PB5 (SensorR) | T路口空位检测 |
 | 蜂鸣器 | PE3 | 到位提示 |
 | LED | PA15 | 状态指示 |
-| 按键 | PE4(KEY1), PE5(KEY2), PE6(KEY3), PC13(KEY4) | 用户输入 |
-| 串口 | UART8 (PE1-TX, PE0-RX) | 115200, printf重定向 |
+| 按键 | PE4(KEY1), PE5(KEY2), PE6(KEY3), PC13(KEY4) | KEY3/4=EXTI, KEY1/2=轮询 |
+| 串口 | UART8 (PE1-TX, PE0-RX) | 115200, printf重定向 + 命令接收 |
 
 ## 定时器分配
 
@@ -63,32 +127,17 @@
 | TIM1 | 左右电机 PWM | CH1=右轮, CH2=左轮, ARR=999 |
 | TIM3 | 右轮编码器 | 编码器模式 |
 | TIM5 | 左轮编码器 | 编码器模式 |
-| TIM6 | 系统时基 | 1ms中断 |
+| TIM6 | 系统时基 | 1ms中断, 每10ms触发控制循环 |
 
-## 控制架构 (test1 完整版)
+## 编码值约定
 
-三级 PID 级联：
-1. **转向环** (外环): 8路传感器偏移量 → PD控制 (Kp=2.12, Kd=0.96)
-2. **角度环** (外环): MPU6050 Z轴角度 → PI控制 (Kp=0.11, Ki=0.0047)
-3. **速度环** (内环): 编码器反馈 → 左右独立PI (Kp=85, Ki=1.7)
+- `encoder_dir = -1`: 原始 CNT 乘 -1 翻转
+- `get_encoders` 内部做 16bit 映射: `el<0 → 65535+el`, `el>0 → el`
+- 前进: 0→65535 (递增), 后退: 65535→0 (递减)
+- 速度 (编码脉冲/10ms): 前进=正, 后退=负
 
-差速公式: `left_target = base_speed - correction`, `right_target = base_speed + correction`
+## 编译
 
-## 电机测试 (feature/motor-test)
-
-- printf 输出 CSV 格式到 UART8 (115200)
-- 测试序列: IDLE → FWD_200/400/600/800 → REV_200/400 → TURN_L/R → BRAKE
-- 每100ms输出一行: 时间戳, 阶段, 左右目标速度/实际速度/编码器值
-- 总时长约18秒，完成后自动刹车
-
-## 编译注意事项
-
-- MDK-ARM 编译产物在 `MDK-ARM/MPU6050H7/` 下，**不要提交到 git**（已存在于历史中）
-- `mpu6050.o` 和 `control.o` 有相互依赖：control.c 引用了 `extern MPU6050_t mpu6050`
-- printf 通过 `fputc` 重定向到 UART8 (见 `Core/Src/usart.c`)
-
-## 常见问题
-
-1. **电机不转**: 检查 `flag` 是否为 1（需按 KEY3），或 `Control()` 是否在主循环中执行
-2. **编译报 Undefined symbol mpu6050**: 确保 main.c 中有 `MPU6050_t mpu6050;` 定义
-3. **转弯角度不准**: 调整 `g_angle_tolerance`（默认±8°）和角度环 PID 参数
+- MDK-ARM 编译产物在 `MDK-ARM/MPU6050H7/`, **不提交 git**
+- printf 通过 `fputc` 重定向到 UART8, 已设 `setvbuf(stdout, NULL, _IONBF, 0)` 无缓冲
+- Keil 需添加 include paths: `..\HAL`, `..\BSP`, `..\Adapters`, `..\Middleware`, `..\App`
