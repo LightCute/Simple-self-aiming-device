@@ -1,21 +1,21 @@
 #include "mode_gimbal_test.h"
-#include "BSP/gimbal_driver.h"
+#include "HAL/gimbal.h"
 #include "HAL/display.h"
 #include "HAL/logger.h"
 #include "HAL/command.h"
 #include "Adapters/cmd_serial.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>   /* strtol */
 
+extern Gimbal  *g_gimbal;
 extern Display *g_disp;
 extern Logger  *g_log;
-extern UART_HandleTypeDef huart4;
 
 static void gmt_enter(void)
 {
-    gimbal_init(&huart4);   /* blocking ~1500ms motor boot */
-    gimbal_sync();           /* start position sync */
+    extern struct __UART_HandleTypeDef huart4;
+    g_gimbal->init(g_gimbal, &huart4);   /* blocking ~1500ms motor boot */
+    g_gimbal->sync(g_gimbal);             /* start position sync */
     g_log->info("Enter GIMBAL mode");
 }
 
@@ -26,23 +26,23 @@ static void gmt_isr(void)
 
 static void gmt_ui(void)
 {
-    gimbal_poll();  /* non-blocking, one step per call */
+    g_gimbal->poll(g_gimbal);  /* non-blocking, one step per call */
 
     /* OLED display */
     char buf[32];
     g_disp->clear();
     g_disp->show_str(0, 0, "GIMBAL");
     sprintf(buf, "X:%4.1f->%4.1f",
-            gimbal_get_current(GIMBAL_AXIS_X) / 10.0f,
-            gimbal_get_target(GIMBAL_AXIS_X) / 10.0f);
+            g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_X) / 10.0f,
+            g_gimbal->get_target(g_gimbal, GIMBAL_AXIS_X) / 10.0f);
     g_disp->show_str(0, 18, buf);
     sprintf(buf, "Y:%4.1f->%4.1f",
-            gimbal_get_current(GIMBAL_AXIS_Y) / 10.0f,
-            gimbal_get_target(GIMBAL_AXIS_Y) / 10.0f);
+            g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_Y) / 10.0f,
+            g_gimbal->get_target(g_gimbal, GIMBAL_AXIS_Y) / 10.0f);
     g_disp->show_str(0, 36, buf);
     sprintf(buf, "spd:%d %s",
-            (int)gimbal_get_speed(),
-            gimbal_is_init_done() ? "OK" : "");
+            (int)g_gimbal->get_speed(g_gimbal),
+            g_gimbal->is_init_done(g_gimbal) ? "OK" : "");
     g_disp->show_str(0, 52, buf);
     g_disp->flush();
 }
@@ -52,7 +52,7 @@ static void gmt_cmd(Command cmd, char data)
     (void)data;
 
     if (cmd == CMD_TOGGLE) {  /* KEY4: re-sync */
-        gimbal_sync();
+        g_gimbal->sync(g_gimbal);
         g_log->info("GIMBAL re-sync");
         return;
     }
@@ -63,23 +63,23 @@ static void gmt_cmd(Command cmd, char data)
         /* ---- ? query current position ---- */
         if (s[0] == '?') {
             g_log->info("X=%ld Y=%ld V=%d",
-                        (long)gimbal_get_current(GIMBAL_AXIS_X),
-                        (long)gimbal_get_current(GIMBAL_AXIS_Y),
-                        (int)gimbal_get_speed());
+                        (long)g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_X),
+                        (long)g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_Y),
+                        (int)g_gimbal->get_speed(g_gimbal));
             return;
         }
 
         /* ---- H home: go to (0, 0) ---- */
         if (s[0] == 'H' || s[0] == 'h') {
-            gimbal_set_angle(GIMBAL_AXIS_X, 0);
-            gimbal_set_angle(GIMBAL_AXIS_Y, 0);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_X, 0);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_Y, 0);
             g_log->info("GIMBAL home X=0 Y=0");
             return;
         }
 
         /* ---- EN enable motors ---- */
         if (strcmp(s, "EN") == 0 || strcmp(s, "en") == 0) {
-            gimbal_enable();
+            g_gimbal->enable(g_gimbal);
             g_log->info("GIMBAL motors enabled");
             return;
         }
@@ -88,7 +88,7 @@ static void gmt_cmd(Command cmd, char data)
         int ival;
         if (sscanf(s, "V%*[ :]%d", &ival) == 1 || sscanf(s, "v%*[ :]%d", &ival) == 1) {
             if (ival > 0) {
-                gimbal_set_speed((int16_t)ival);
+                g_gimbal->set_speed(g_gimbal, (int16_t)ival);
                 g_log->info("GIMBAL speed=%d", ival);
             }
             return;
@@ -98,42 +98,41 @@ static void gmt_cmd(Command cmd, char data)
         int v1, v2;
         if (sscanf(s, "XY%*[ :]%d%*[ :]%d", &v1, &v2) == 2 ||
             sscanf(s, "xy%*[ :]%d%*[ :]%d", &v1, &v2) == 2) {
-            gimbal_set_angle(GIMBAL_AXIS_X, v1);
-            gimbal_set_angle(GIMBAL_AXIS_Y, v2);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_X, v1);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_Y, v2);
             g_log->info("GIMBAL XY=%d,%d", v1, v2);
             return;
         }
 
-        /* ---- X <pos> set X axis (pos in deci-degrees: 200 = 20.0°) ---- */
-        /* supports both "X 200" and "X:200" */
+        /* ---- X <pos> set X axis (pos in deci-degrees: 200 = 20.0°; supports X:200) ---- */
         if (sscanf(s, "X%*[ :]%d", &ival) == 1 || sscanf(s, "x%*[ :]%d", &ival) == 1) {
-            gimbal_set_angle(GIMBAL_AXIS_X, ival);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_X, ival);
             g_log->info("GIMBAL X=%d cur=%ld", ival,
-                        (long)gimbal_get_current(GIMBAL_AXIS_X));
+                        (long)g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_X));
             return;
         }
 
         /* ---- Y <pos> set Y axis ---- */
         if (sscanf(s, "Y%*[ :]%d", &ival) == 1 || sscanf(s, "y%*[ :]%d", &ival) == 1) {
-            gimbal_set_angle(GIMBAL_AXIS_Y, ival);
+            g_gimbal->set_angle(g_gimbal, GIMBAL_AXIS_Y, ival);
             g_log->info("GIMBAL Y=%d cur=%ld", ival,
-                        (long)gimbal_get_current(GIMBAL_AXIS_Y));
+                        (long)g_gimbal->get_current(g_gimbal, GIMBAL_AXIS_Y));
             return;
         }
 
         /* ---- DX <delta> relative move X (supports DX:50) ---- */
         if (sscanf(s, "DX%*[ :]%d", &ival) == 1 || sscanf(s, "dx%*[ :]%d", &ival) == 1) {
-            gimbal_move_delta(GIMBAL_AXIS_X, ival);
+            g_gimbal->move_delta(g_gimbal, GIMBAL_AXIS_X, ival);
             g_log->info("GIMBAL DX=%d tgt=%ld", ival,
-                        (long)gimbal_get_target(GIMBAL_AXIS_X));
+                        (long)g_gimbal->get_target(g_gimbal, GIMBAL_AXIS_X));
             return;
         }
 
         /* ---- DY <delta> relative move Y ---- */
         if (sscanf(s, "DY%*[ :]%d", &ival) == 1 || sscanf(s, "dy%*[ :]%d", &ival) == 1) {
-            gimbal_move_delta(GIMBAL_AXIS_Y, ival);
+            g_gimbal->move_delta(g_gimbal, GIMBAL_AXIS_Y, ival);
             g_log->info("GIMBAL DY=%d tgt=%ld", ival,
-                        (long)gimbal_get_target(GIMBAL_AXIS_Y));
+                        (long)g_gimbal->get_target(g_gimbal, GIMBAL_AXIS_Y));
             return;
         }
 
@@ -145,7 +144,7 @@ static void gmt_cmd(Command cmd, char data)
                 g_log->info("GIMBAL bookmark slot out of range");
                 return;
             }
-            if (gimbal_save_bookmark((uint8_t)slot) == 0)
+            if (g_gimbal->save_bookmark(g_gimbal, (uint8_t)slot) == 0)
                 g_log->info("GIMBAL saved to slot %d", slot);
             else
                 g_log->info("GIMBAL save bookmark failed");
@@ -161,8 +160,8 @@ static void gmt_cmd(Command cmd, char data)
                 return;
             }
             int32_t x, y;
-            if (gimbal_get_bookmark((uint8_t)slot, &x, &y)) {
-                gimbal_go_bookmark((uint8_t)slot);
+            if (g_gimbal->get_bookmark(g_gimbal, (uint8_t)slot, &x, &y)) {
+                g_gimbal->go_bookmark(g_gimbal, (uint8_t)slot);
                 g_log->info("GIMBAL go slot %d: X=%ld Y=%ld", slot, (long)x, (long)y);
             } else {
                 g_log->info("GIMBAL slot %d empty", slot);
@@ -174,7 +173,7 @@ static void gmt_cmd(Command cmd, char data)
         if (s[0] == 'L' || s[0] == 'l') {
             for (int i = 0; i < GIMBAL_BOOKMARK_MAX; i++) {
                 int32_t x, y;
-                if (gimbal_get_bookmark((uint8_t)i, &x, &y)) {
+                if (g_gimbal->get_bookmark(g_gimbal, (uint8_t)i, &x, &y)) {
                     g_log->info("GIMBAL slot %d: X=%ld Y=%ld", i, (long)x, (long)y);
                 }
             }
@@ -195,13 +194,13 @@ static void gmt_cmd(Command cmd, char data)
             if (!axis) { g_log->info("GIMBAL LIMIT: axis must be X or Y"); return; }
 
             if (strcmp(rest, "OFF") == 0 || strcmp(rest, "off") == 0) {
-                gimbal_disable_limit(axis);
+                g_gimbal->disable_limit(g_gimbal, axis);
                 g_log->info("GIMBAL limit %c disabled", axis_ch);
                 return;
             }
             int min, max;
             if (sscanf(rest, "%d %d", &min, &max) == 2) {
-                gimbal_set_limit(axis, min, max);
+                g_gimbal->set_limit(g_gimbal, axis, min, max);
                 g_log->info("GIMBAL limit %c: %d ~ %d", axis_ch, min, max);
             }
             return;

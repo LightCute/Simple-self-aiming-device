@@ -34,6 +34,7 @@
 #include "Adapters/chassis.h"
 #include "Adapters/line_track.h"
 #include "Adapters/turn_ctrl.h"
+#include "Adapters/gimbal_ctrl.h"
 
 /* --- App 模式 --- */
 #include "mode_lap_run.h"
@@ -65,6 +66,7 @@ Logger   *g_log     = &g_log_uart;
 Chassis  *g_chassis = &g_chassis_inst;
 Tracker  *g_tracker = &g_tracker_inst;
 TurnCtrl *g_turn    = &g_turn_ctrl_inst;
+Gimbal   *g_gimbal  = &g_gimbal_ctrl;
 
 /* --- 命令源 --- */
 static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
