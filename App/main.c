@@ -34,6 +34,7 @@
 #include "Adapters/chassis.h"
 #include "Adapters/line_track.h"
 #include "Adapters/turn_ctrl.h"
+#include "BSP/gimbal_driver.h"
 
 /* --- App 模式 --- */
 #include "mode_lap_run.h"
@@ -71,7 +72,7 @@ static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_gimbal_test, &mode_lap_run };
+static const AppMode *g_modes[] = { &mode_lap_run, &mode_gimbal_test };
 #define MODE_COUNT 2
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
@@ -137,9 +138,9 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_TIM6_Init();
-  MX_UART4_Init();
   MX_UART8_Init();
   MX_DMA_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
   g_disp->init();
   while (g_imu->init()) {
