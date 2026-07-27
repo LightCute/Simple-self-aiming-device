@@ -149,6 +149,10 @@ void f32c_uart_send(uint8_t *data, uint8_t len)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
+    /* 无条件诊断: 确认回调是否被调用, 以及哪个 UART 触发的 */
+    printf("[RX CB] inst=%p size=%d\r\n", (void*)huart->Instance, (int)Size);
+    fflush(stdout);
+
     if (huart->Instance != UART4) return;
 
     g_rx_len = Size;
