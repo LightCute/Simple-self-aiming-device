@@ -29,8 +29,9 @@ static int32_t g_edge_len   = 0;    /* 正方形边长 */
 static int32_t g_first_seg  = 0;    /* 起点→第一弯 */
 
 /* 弯道 */
-static uint8_t g_corner_dir = 0;    /* 1=左, 2=右 */
-static int16_t g_straight_dist = 200; /* 弯前直行补偿 */
+static uint8_t g_corner_dir = 0;
+static int16_t g_straight_dist = 200;
+static uint8_t g_grace = 0;          /* 出弯保护: 30帧=300ms不检测弯道 */
 
 /* ======== 辅助 ======== */
 static int32_t enc_dist(void) {
@@ -72,7 +73,8 @@ static void lap_isr(void) {
         break;
 
     case S_LINE: {
-        TrackEvent ev = g_tracker->update(g_tracker);
+        if (g_grace > 0) { g_grace--; }   /* 出弯保护 */
+        TrackEvent ev = (g_grace > 0) ? TRACK_OK : g_tracker->update(g_tracker);
         g_enc_accum = enc_dist();
 
         if (ev == TRACK_OK) {
@@ -104,11 +106,13 @@ static void lap_isr(void) {
     }
 
     case S_CORNER_STRAIGHT: {
+        int16_t spd = (g_tracker->base_speed > 0) ? g_tracker->base_speed
+                                                   : (int16_t)20;
+        g_chassis->set_speeds(spd, spd);  /* 每帧设速确保不丢 */
         int32_t d = enc_dist();
         if (d < 0) d = -d;
         if (d >= g_straight_dist) {
             g_chassis->stop();
-            /* 转弯 */
             float angle = (g_corner_dir == 1) ? 90.0f : -90.0f;
             g_turn->spot(g_turn, angle);
             g_st = S_CORNER_TURN;
@@ -128,20 +132,18 @@ static void lap_isr(void) {
                 g_corner_cnt = 0;
                 g_lap_count++;
                 if (g_lap_count >= g_lap_target) {
-                    /* 最后一弯: 直行回起点 */
                     int32_t back = g_edge_len - g_first_seg;
                     if (back < 0) back = -back;
                     enc_mark_start();
                     int16_t spd = (int16_t)20;
                     g_chassis->set_speeds(spd, spd);
-                    g_st = S_IDLE;  /* 简单停车 */
-                    g_chassis->stop();
                     g_st = S_DONE;
                     g_log->info("ALL DONE! back=%d", (int)back);
                     break;
                 }
             }
-            /* 继续巡线 */
+            /* 出弯回巡线, 300ms防重触发 */
+            g_grace = 30;
             g_tracker->init(g_tracker);
             enc_mark_start();
             g_st = S_LINE;
