@@ -87,11 +87,11 @@ static void lap_isr(void) {
         g_turn->update(g_turn);
         {
             static uint8_t tlog = 0;
-            if (++tlog >= 50) { tlog = 0;
-                g_log->data("TURN err=%.1f corr=%.0f state=%d",
+            if (++tlog >= 30) { tlog = 0;
+                g_log->data("TURN err=%.1f Z=%.1f corr=%.0f",
                             (double)g_turn->angle_err,
-                            (double)g_turn->correction,
-                            (int)g_turn->state);
+                            (double)g_imu->yaw,
+                            (double)g_turn->correction);
             }
         }
         if (g_turn->state == TURN_DONE) {
