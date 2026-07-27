@@ -63,8 +63,8 @@ static void tc_update(void *self) {
 
     /* 驱动底盘: 原地转 base=0, 弧线转 base≠0 */
     g_chassis->set_speeds(
-        (int16_t)(g_base_spd - corr),
-        (int16_t)(g_base_spd + corr));
+        (int16_t)(g_base_spd + corr),   /* corr>0 → 左快=左转 */
+        (int16_t)(g_base_spd - corr));
 }
 
 TurnCtrl g_turn_ctrl_inst = {
