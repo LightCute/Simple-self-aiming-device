@@ -35,12 +35,6 @@
 #include "Adapters/turn_ctrl.h"
 
 /* --- App 模式 --- */
-#include "mode_imu_test.h"
-#include "mode_chassis_test.h"
-#include "mode_sensor_test.h"
-#include "mode_track.h"
-#include "mode_turn.h"
-#include "mode_distance.h"
 #include "mode_lap_run.h"
 /* USER CODE END Includes */
 
@@ -75,8 +69,8 @@ static CommandSource *g_sources[] = { &g_src_keys, &g_src_serial };
 #define SRC_COUNT 2
 
 /* --- 模式注册 (加新模式只需加一行) --- */
-static const AppMode *g_modes[] = { &mode_imu_test, &mode_chassis_test, &mode_track, &mode_sensor_test, &mode_turn, &mode_distance, &mode_lap_run };
-#define MODE_COUNT 7
+static const AppMode *g_modes[] = { &mode_lap_run };
+#define MODE_COUNT 1
 static uint8_t g_cur_mode = 0;
 /* USER CODE END PV */
 
