@@ -85,6 +85,15 @@ static void lap_isr(void) {
 
     case S_CORNER_TURN:
         g_turn->update(g_turn);
+        {
+            static uint8_t tlog = 0;
+            if (++tlog >= 50) { tlog = 0;
+                g_log->data("TURN err=%.1f corr=%.0f state=%d",
+                            (double)g_turn->angle_err,
+                            (double)g_turn->correction,
+                            (int)g_turn->state);
+            }
+        }
         if (g_turn->state == TURN_DONE) {
             g_corner_cnt++;
             g_log->info("Corner done: %d/4 lap=%d/%d",
